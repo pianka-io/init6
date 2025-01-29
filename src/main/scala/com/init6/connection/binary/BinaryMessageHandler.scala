@@ -329,7 +329,7 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
     goto(ExpectingSidCreateAccountFromDAO)
   }
 
-  def createAccount2(passwordHash: Array[Byte], username: String): State = {
+  private def createAccount2(passwordHash: Array[Byte], username: String): State = {
     if (username.length < Config().Accounts.minLength) {
       send(SidCreateAccount2(SidCreateAccount2.RESULT_NAME_TOO_SHORT))
       return goto(ExpectingSidLogonResponse)
@@ -352,7 +352,7 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
     goto(ExpectingSidCreateAccount2FromDAO)
   }
 
-  def handleLogon(clientToken: Int, serverToken: Int, passwordHash: Array[Byte], username: String) = {
+  private def handleLogon(clientToken: Int, serverToken: Int, passwordHash: Array[Byte], username: String) = {
     oldUsername = username
     DAO.getUser(username).fold({
       send(SidLogonResponse(SidLogonResponse.RESULT_INVALID_PASSWORD))
@@ -377,7 +377,7 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
     })
   }
 
-  def handleLogon2(clientToken: Int, serverToken: Int, passwordHash: Array[Byte], username: String) = {
+  private def handleLogon2(clientToken: Int, serverToken: Int, passwordHash: Array[Byte], username: String) = {
     oldUsername = username
     DAO.getUser(username).fold({
       send(SidLogonResponse2(SidLogonResponse2.RESULT_DOES_NOT_EXIST))
@@ -402,7 +402,7 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
     })
   }
 
-  def changePassword(clientToken: Int, serverToken: Int, oldPasswordHash: Array[Byte], newPasswordHash: Array[Byte], username: String) = {
+  private def changePassword(clientToken: Int, serverToken: Int, oldPasswordHash: Array[Byte], newPasswordHash: Array[Byte], username: String) = {
     DAO.getUser(username).fold({
       send(SidChangePassword(SidChangePassword.RESULT_FAILED))
       goto(ExpectingSidLogonResponse)
@@ -466,8 +466,8 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
 
               packet.joinFlag match {
                 case 0x00 => send(SidChatEvent(0x0e, 0, 0, username, packet.channel))
-                case 0x02 => actor ! JoinChannelFromConnection(packet.channel, true)
-                case 0x01 | 0x05 => actor ! JoinChannelFromConnection(packet.channel, false)
+                case 0x02 => actor ! JoinChannelFromConnection(packet.channel, forceJoin = true)
+                case 0x01 | 0x05 => actor ! JoinChannelFromConnection(packet.channel, forceJoin = false)
                 case _ =>
               }
               stay()
