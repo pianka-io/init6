@@ -27,7 +27,7 @@ object Init6 extends App with Init6Component {
   ChannelsActor()
   TopCommandActor()
   RankingActor()
-  ServerAnnouncementActor(args(0).toLong)
+//  ServerAnnouncementActor(args(0).toLong)
 
   val random = new Random(System.nanoTime())
   val delay =

@@ -25,7 +25,8 @@ object Config {
 
   def reload() = {
     this.synchronized {
-      config = new Config(sys.props("config"))
+//      config = new Config(sys.props("config"))
+      config = new Config("src/main/resources/init6.conf")
       config
     }
   }
