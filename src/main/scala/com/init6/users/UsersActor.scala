@@ -264,10 +264,10 @@ class UsersActor extends Init6RemotingActor with Init6LoggingActor {
       removeFromLimiter(ipAddress)
 
     case BroadcastCommand(message) =>
-      localUsers ! UserError(message)
+      localUsers ! UserInfo(message)
 
     case BroadcastCommandToLocal(message) =>
-      localUsers ! UserError(message)
+      localUsers ! UserInfo(message)
 
     case DisconnectCommand(user) =>
       rem(user)
@@ -299,7 +299,7 @@ class UsersActor extends Init6RemotingActor with Init6LoggingActor {
 
     case BroadcastCommand(message) =>
       //println(s"### Remote Broadcast $localUsers")
-      localUsers ! UserError(message)
+      localUsers ! UserInfo(message)
 
     case x =>
       log.error("UsersActor Unhandled Remote {}", x)

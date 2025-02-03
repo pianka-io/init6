@@ -133,6 +133,7 @@ object CommandDecoder {
           case "showuserbans" => ShowUserBans(message)
           case "usermute" | "muteuser" => UserMute(message)
           case "userunmute" | "unmuteuser" => UserUnmute(message)
+          //case "setuserflags" | "setuf" => UserFlagsCommand(message)
           case _ => userCommand
         }
       } else {
