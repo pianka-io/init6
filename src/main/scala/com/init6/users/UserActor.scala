@@ -377,34 +377,47 @@ class UserActor(connectionInfo: ConnectionInfo, var user: User, encoder: Encoder
   }
 
   private def handleChatEvent(chatEvent: ChatEvent) = {
+    log.debug(s"handling chat event $chatEvent")
     val chatEventSender = sender()
     // If it comes from Channels/*, make sure it is the current channelActor
+    log.debug(s"path parent name ${chatEventSender.path.parent.name}")
+    log.debug(s"chat event sender $chatEventSender")
     if (chatEventSender.path.parent.name != INIT6_CHANNELS_PATH || chatEventSender == channelActor) {
+      log.debug("entering handleChatEvent handling")
       chatEvent match {
         case UserUpdated(newUser) =>
+          log.debug("UserUpdated")
           user = newUser
 
         case UserIn(user) =>
+          log.debug("UserIn")
           encodeAndSend(UserIn(checkSquelched(user)))
 
         case UserJoined(user) =>
+          log.debug("UserJoined")
           encodeAndSend(UserJoined(checkSquelched(user)))
 
         case UserFlags(user) =>
+          log.debug("UserFlags")
           encodeAndSend(UserFlags(checkSquelched(user)))
 
         case channelEvent: SquelchableTalkEvent =>
+          log.debug("SquelchableTalkEvent")
           if (!squelchedUsers.contains(channelEvent.user.name)) {
             encodeAndSend(channelEvent)
           }
 
         case UserWhisperedTo(user, message) =>
+          log.debug("UserWhisperedTo")
           replyToUser = Some(user.name)
           encodeAndSend(chatEvent)
 
         case _ =>
+          log.debug("catch all sending")
           encodeAndSend(chatEvent)
       }
+    } else {
+      log.debug("skipping handleChatEvent handling")
     }
   }
 
