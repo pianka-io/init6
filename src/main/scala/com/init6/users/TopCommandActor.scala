@@ -1,6 +1,6 @@
 package com.init6.users
 
-import akka.actor.{ActorRef, Props}
+import akka.actor.{ActorLogging, ActorRef, Props}
 import com.init6.Constants._
 import com.init6.channels.{User, UserInfo}
 import com.init6.coders.commands.TopCommand
@@ -20,7 +20,7 @@ case class UserChannelJoined(connectionInfo: ConnectionInfo, user: User, channel
 
 case class TopInfo(user: User, connectionInfo: ConnectionInfo, joinedPlace: Int)
 
-class TopCommandActor extends Init6Actor {
+class TopCommandActor extends Init6Actor with ActorLogging {
 
   val topMap = Map(
     "binary" -> TopInfoSeq(),
@@ -47,8 +47,11 @@ class TopCommandActor extends Init6Actor {
       topMap("all") += topInfo
 
     case TopCommand(_, which) =>
+      log.debug("actor received top command")
       val topList = topMap(which)
+      log.debug("created top map, sending TOP_INFO")
       sender() ! UserInfo(TOP_INFO(topList.limit, which, Config().Server.host))
+      log.debug("sent UserInfo with TOP_INFO")
       topList
         .values
         .zipWithIndex
@@ -59,7 +62,9 @@ class TopCommandActor extends Init6Actor {
               case TelnetProtocol => "OLD CHAT"
               case _ => user.client.reverse
             }
+            log.debug("sending TOP_LIST")
             sender() ! UserInfo(TOP_LIST(i + 1, user.name, client, connectionInfo.connectedTime, connectionInfo.firstPacketReceivedTime, joinedPlace, user.inChannel))
+            log.debug("sent TOP_LIST")
         }
   }
 }

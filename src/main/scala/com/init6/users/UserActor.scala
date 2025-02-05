@@ -225,7 +225,9 @@ class UserActor(connectionInfo: ConnectionInfo, var user: User, encoder: Encoder
       }
 
       val command = CommandDecoder(user, data)
+      log.debug(s"command ${command}")
       if (Config().AntiFlood.enabled && floodState(command, data.length)) {
+        log.debug("antiflood handled")
         // Handle AntiFlood
         encodeAndSend(UserFlooded)
         ipLimiterActor ! IpBan(
@@ -236,7 +238,7 @@ class UserActor(connectionInfo: ConnectionInfo, var user: User, encoder: Encoder
         return receive
       }
 
-      //log.error(s"UserMessageDecoder $command")
+      log.error(s"UserMessageDecoder $command")
       command match {
         case PongCommand(cookie) =>
           handlePingResponse(cookie)
@@ -273,9 +275,12 @@ class UserActor(connectionInfo: ConnectionInfo, var user: User, encoder: Encoder
         case command@UsersCommand => usersActor ! command
         case command @ UptimeCommand => usersActor ! command
         case command: TopCommand =>
+          log.debug("top command attempted")
           if (command.serverIp != Config().Server.host) {
+            log.debug("sending remote")
             system.actorSelection(remoteAddress(command.serverIp, INIT6_TOP_COMMAND_PATH)) ! command
           } else {
+            log.debug("sending local")
             topCommandActor ! command
           }
         case command: GetRankingCommand =>
