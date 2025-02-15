@@ -42,6 +42,10 @@ case class DAOUpdateLoggedInTime(username: String) extends Command
 
 case class RealmCreateCookie(userId: Long) extends Command
 case class RealmCreateCookieAck(cookie: Int) extends Command
+case class RealmReadCookie(cookie: Int) extends Command
+case class RealmReadCookieResponse(userId: Long) extends Command
+case class RealmCreateCharacter(userId: Long, name: String, clazz: Int, flags: Int, ladder: Int) extends Command
+case class RealmCreateCharacterAck(success: Boolean) extends Command
 
 class DAOActor extends Init6RemotingActor {
 
@@ -57,6 +61,16 @@ class DAOActor extends Init6RemotingActor {
       if (isLocal()) {
         sender() ! RealmCreateCookieAck(cookie.toInt)
       }
+
+    case RealmReadCookie(cookie) =>
+      val userId = DAO.readRealmCookie(cookie)
+      if (isLocal()) {
+        sender() ! RealmReadCookieResponse(userId)
+      }
+
+    case RealmCreateCharacter(userId, name, clazz, flags, ladder) =>
+      val result = DAO.createCharacter(userId, name, clazz, flags, ladder)
+      sender() ! RealmCreateCharacterAck(result)
 
     case CreateAccount(username, passwordHash) =>
       DAO.createUser(username, passwordHash)

@@ -2,14 +2,15 @@ package com.init6.connection.realm
 
 import akka.actor.{ActorRef, FSM, Props}
 import akka.util.ByteString
-import com.init6.coders.realm.packets.McpCharList2
+import com.init6.coders.realm.packets.{McpCharCreate, McpCharList2, McpStartup, Packets}
 import com.init6.coders.realm.packets.McpStartup.RESULT_SUCCESS
-import com.init6.coders.realm.packets.{McpStartup, Packets}
 import com.init6.connection.{ConnectionInfo, Init6KeepAliveActor, WriteOut}
 
 sealed trait RealmState
 case object ExpectingStartup extends RealmState
 case object ExpectingLogon extends RealmState
+
+case object ExpectingRealmCookieReadFromDAO extends RealmState
 
 case class RealmPacket(packetId: Byte, packet: ByteString)
 
@@ -27,9 +28,12 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
       id match {
         case Packets.MCP_STARTUP =>
           log.info(">> Received MCP_STARTUP")
-          send(McpStartup(RESULT_SUCCESS))
-          log.info("<< Sent MCP_STARTUP")
-          goto(ExpectingLogon)
+          data match {
+            case McpStartup(packet) =>
+              send(McpStartup(RESULT_SUCCESS))
+              log.info("<< Sent MCP_STARTUP")
+              goto(ExpectingLogon)
+          }
         case _ =>
           log.info(">> Received MCP packet {}", id)
           stay()
@@ -37,6 +41,10 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
     case x =>
       log.info(">> Received {}", x.toString)
       stay()
+  }
+
+  when (ExpectingRealmCookieReadFromDAO) {
+
   }
 
   when (ExpectingLogon) {
@@ -47,6 +55,17 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
           send(McpCharList2())
           log.info("<< Sent MCP_CHARLIST2")
           stay()
+        case Packets.MCP_CHARCREATE =>
+          log.info(">> Received MCP_CHARCREATE")
+          data match {
+            case McpCharCreate(packet) =>
+              daoActor ! RealmCreateCharacter()
+              stay()
+            case _ => stop()
+          }
+//          send(McpCharCreate())
+//          log.info("<< Sent MCP_CHARCREATE")
+//          stay()
         case _ =>
           log.info(">> Received MCP packet {}", id)
           stay()
