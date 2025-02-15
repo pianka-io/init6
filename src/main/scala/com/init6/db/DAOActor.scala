@@ -40,6 +40,9 @@ case class DAOFriendsRemove(userId: Long, who: String) extends Command
 case class DAOFriendsRemoveResponse(friends: Seq[DbFriend], removedFriend: DbFriend) extends Command
 case class DAOUpdateLoggedInTime(username: String) extends Command
 
+case class RealmCreateCookie(userId: Long) extends Command
+case class RealmCreateCookieAck(cookie: Int) extends Command
+
 class DAOActor extends Init6RemotingActor {
 
   override val actorPath = INIT6_DAO_PATH
@@ -48,6 +51,12 @@ class DAOActor extends Init6RemotingActor {
     case ReloadDb =>
       DAO.reloadCache()
       sender() ! ReloadDbAck
+
+    case RealmCreateCookie(userId) =>
+      val cookie = DAO.createRealmCookie(userId)
+      if (isLocal()) {
+        sender() ! RealmCreateCookieAck(cookie.toInt)
+      }
 
     case CreateAccount(username, passwordHash) =>
       DAO.createUser(username, passwordHash)

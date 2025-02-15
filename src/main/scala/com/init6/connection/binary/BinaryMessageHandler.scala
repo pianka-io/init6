@@ -1,7 +1,6 @@
 package com.init6.connection.binary
 
 import java.util.concurrent.TimeUnit
-
 import akka.actor.{ActorRef, FSM, PoisonPill, Props}
 import akka.io.Tcp.Received
 import akka.util.{ByteString, Timeout}
@@ -14,7 +13,7 @@ import com.init6.coders.binary.packets.Packets._
 import com.init6.coders.binary.packets._
 import com.init6.coders.commands.{FriendsList, PongCommand}
 import com.init6.connection._
-import com.init6.db.{CreateAccount, DAO, DAOCreatedAck, UpdateAccountPassword}
+import com.init6.db.{CreateAccount, DAO, DAOCreatedAck, RealmCreateCookie, RealmCreateCookieAck, UpdateAccountPassword}
 import com.init6.users._
 import com.init6.utils.LimitedAction
 
@@ -38,6 +37,8 @@ case object ExpectingChangePasswordHandled extends BinaryState
 case object ExpectingSidCreateAccountFromDAO extends BinaryState
 case object ExpectingSidCreateAccount2FromDAO extends BinaryState
 case object LoggedIn extends BinaryState
+
+case object ExpectingRealmCreateCookieFromDAO extends BinaryState
 
 case class BinaryPacket(packetId: Byte, packet: ByteString)
 
@@ -63,6 +64,7 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
   var ping: Int = -1
 
   var clientToken: Int = _
+  var userId: Long = _
   var username: String = _
   var oldUsername: String = _
   var productId: String = _
@@ -82,7 +84,8 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
       case SID_LOGONREALMEX =>
         binaryPacket.packet match {
           case SidLogonRealmEx(packet) =>
-            send(SidLogonRealmEx())
+            daoActor ! RealmCreateCookie(userId)
+            return goto(ExpectingRealmCreateCookieFromDAO)
         }
       /* Sanctuary */
       case SID_NULL =>
@@ -132,6 +135,12 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
         log.error(">> {} Unexpected: {}", connectionInfo.actor, f"$packetId%X")
     }
     stay()
+  }
+
+  when(ExpectingRealmCreateCookieFromDAO) {
+    case Event(RealmCreateCookieAck(cookie), _) =>
+      send(SidLogonRealmEx(cookie))
+      goto(ExpectingSidEnterChat)
   }
 
   def send(data: ByteString) = {
@@ -291,6 +300,7 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
   when(ExpectingLogonHandled) {
     case Event(UsersUserAdded(userActor, user), _) =>
       this.actor = userActor
+      this.userId = user.id
       this.username = user.name
       send(SidLogonResponse(SidLogonResponse.RESULT_SUCCESS))
       goto(ExpectingSidEnterChat) using userActor
@@ -304,6 +314,7 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
   when(ExpectingLogon2Handled) {
     case Event(UsersUserAdded(userActor, user), _) =>
       this.actor = userActor
+      this.userId = user.id
       this.username = user.name
       send(SidLogonResponse2(SidLogonResponse2.RESULT_SUCCESS))
       goto(ExpectingSidEnterChat) using userActor
