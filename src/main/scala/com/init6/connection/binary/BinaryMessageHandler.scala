@@ -73,6 +73,18 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
   def handleRest(binaryPacket: BinaryPacket): State = {
     log.debug(">> {} Received: {}", connectionInfo.actor, f"${binaryPacket.packetId}%X")
     binaryPacket.packetId match {
+      /* Sanctuary */
+      case SID_QUERYREALMS2 =>
+        binaryPacket.packet match {
+          case SidQueryRealms2(packet) =>
+            send(SidQueryRealms2())
+        }
+      case SID_LOGONREALMEX =>
+        binaryPacket.packet match {
+          case SidLogonRealmEx(packet) =>
+            send(SidLogonRealmEx())
+        }
+      /* Sanctuary */
       case SID_NULL =>
         binaryPacket.packet match {
           case SidNull(packet) =>

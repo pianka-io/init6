@@ -50,6 +50,7 @@ class WebSocketProtocolHandler(webSocketRawConnectionInfo: WebSocketRawConnectio
       val connectionInfo = ConnectionInfo(
         ipAddress = webSocketRawConnectionInfo.ipAddress,
         actor = actor,
+        port = 443,
         connectedTime = webSocketRawConnectionInfo.connectedTime,
         place = webSocketRawConnectionInfo.place
       )

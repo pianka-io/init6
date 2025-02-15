@@ -6,7 +6,8 @@ import akka.util.ByteString
 import com.init6.Init6Actor
 import com.init6.connection.binary.BinaryMessageHandler
 import com.init6.connection.chat1.Chat1Handler
-import com.init6.users.{BinaryProtocol, Chat1Protocol, TelnetProtocol}
+import com.init6.connection.realm.RealmMessageHandler
+import com.init6.users.{BinaryProtocol, Chat1Protocol, RealmProtocol, TelnetProtocol}
 
 object ProtocolHandler {
   def apply(rawConnectionInfo: ConnectionInfo) = Props(classOf[ProtocolHandler], rawConnectionInfo)
@@ -50,17 +51,20 @@ class ProtocolHandler(rawConnectionInfo: ConnectionInfo) extends Init6Actor with
       val packetReceivedTime = getAcceptingUptime.toNanos
       var isC1 = false
       val protocolData =
-        if (data.head == BINARY) {
+        if (rawConnectionInfo.port == 4000) { // realm
+          Some(ConnectionProtocolData(new RealmReceiver, context.actorOf(RealmMessageHandler(
+            rawConnectionInfo.copy(actor = self, firstPacketReceivedTime = packetReceivedTime, protocol = RealmProtocol))), data.drop(1)))
+        } else if (data.head == BINARY) {
           Some(ConnectionProtocolData(new BinaryReceiver, context.actorOf(BinaryMessageHandler(
             rawConnectionInfo.copy(actor = self, firstPacketReceivedTime = packetReceivedTime, protocol = BinaryProtocol))), data.drop(1)))
         } else if (data(0) == TELNET) {
           Some(ConnectionProtocolData(new ChatReceiver, context.actorOf(TelnetMessageHandler(
             rawConnectionInfo.copy(actor = self, firstPacketReceivedTime = packetReceivedTime, protocol = TelnetProtocol))), data.drop({
-              if (data(1) == TELNET_2) {
-                2
-              } else {
-                1
-              }
+            if (data(1) == TELNET_2) {
+              2
+            } else {
+              1
+            }
           })))
         } else if (data(0) == INIT6_CHAT && data(1) == INIT6_CHAT_1) {
           isC1 = true

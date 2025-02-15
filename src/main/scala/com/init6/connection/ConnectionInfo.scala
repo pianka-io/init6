@@ -10,6 +10,7 @@ import com.init6.users.{NotYetKnownProtocol, Protocol}
   */
 case class ConnectionInfo(
   ipAddress: InetSocketAddress,
+  port: Int,
   actor: ActorRef,
   connectedTime: Long,
   firstPacketReceivedTime: Long = -1,
