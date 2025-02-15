@@ -2,14 +2,16 @@ package com.init6.connection.realm
 
 import akka.actor.{ActorRef, FSM, Props}
 import akka.util.ByteString
-import com.init6.coders.realm.packets.McpCharList2
+import com.init6.coders.realm.packets.{McpCharCreate, McpCharList2, McpStartup, Packets}
 import com.init6.coders.realm.packets.McpStartup.RESULT_SUCCESS
-import com.init6.coders.realm.packets.{McpStartup, Packets}
 import com.init6.connection.{ConnectionInfo, Init6KeepAliveActor, WriteOut}
+import com.init6.db.RealmReadCookieResponse
 
 sealed trait RealmState
 case object ExpectingStartup extends RealmState
 case object ExpectingLogon extends RealmState
+
+case object ExpectingRealmCookieReadFromDAO extends RealmState
 
 case class RealmPacket(packetId: Byte, packet: ByteString)
 
@@ -19,6 +21,8 @@ object RealmMessageHandler {
 
 class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliveActor with FSM[RealmState, ActorRef] {
 
+  var userId: Long = _
+
   startWith(ExpectingStartup, ActorRef.noSender)
   context.watch(connectionInfo.actor)
 
@@ -27,9 +31,14 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
       id match {
         case Packets.MCP_STARTUP =>
           log.info(">> Received MCP_STARTUP")
-          send(McpStartup(RESULT_SUCCESS))
-          log.info("<< Sent MCP_STARTUP")
-          goto(ExpectingLogon)
+          data match {
+            case McpStartup(packet) =>
+              log.info(">> Retrieving realm cookie")
+              goto(ExpectingRealmCookieReadFromDAO)
+//              send(McpStartup(RESULT_SUCCESS))
+//              log.info("<< Sent MCP_STARTUP")
+//              goto(ExpectingLogon)
+          }
         case _ =>
           log.info(">> Received MCP packet {}", id)
           stay()
@@ -37,6 +46,13 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
     case x =>
       log.info(">> Received {}", x.toString)
       stay()
+  }
+
+  when (ExpectingRealmCookieReadFromDAO) {
+    case Event(RealmReadCookieResponse(userId), _) =>
+      send(McpStartup(RESULT_SUCCESS))
+      log.info("<< Sent MCP_STARTUP")
+      goto(ExpectingLogon)
   }
 
   when (ExpectingLogon) {
@@ -47,6 +63,17 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
           send(McpCharList2())
           log.info("<< Sent MCP_CHARLIST2")
           stay()
+        case Packets.MCP_CHARCREATE =>
+          log.info(">> Received MCP_CHARCREATE")
+          data match {
+            case McpCharCreate(packet) =>
+//              daoActor ! RealmCreateCharacter()
+              stay()
+            case _ => stop()
+          }
+//          send(McpCharCreate())
+//          log.info("<< Sent MCP_CHARCREATE")
+//          stay()
         case _ =>
           log.info(">> Received MCP packet {}", id)
           stay()
