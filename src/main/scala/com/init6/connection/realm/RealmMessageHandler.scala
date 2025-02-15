@@ -5,6 +5,10 @@ import akka.util.ByteString
 import com.init6.coders.realm.packets.{McpCharCreate, McpCharList2, McpStartup, Packets}
 import com.init6.coders.realm.packets.McpStartup.RESULT_SUCCESS
 import com.init6.connection.{ConnectionInfo, Init6KeepAliveActor, WriteOut}
+<<<<<<< Updated upstream
+=======
+import com.init6.db.{RealmReadCookie, RealmReadCookieResponse}
+>>>>>>> Stashed changes
 
 sealed trait RealmState
 case object ExpectingStartup extends RealmState
@@ -30,9 +34,15 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
           log.info(">> Received MCP_STARTUP")
           data match {
             case McpStartup(packet) =>
+<<<<<<< Updated upstream
               send(McpStartup(RESULT_SUCCESS))
               log.info("<< Sent MCP_STARTUP")
               goto(ExpectingLogon)
+=======
+              log.info(">> Retrieving realm cookie")
+              daoActor ! RealmReadCookie(packet.cookie)
+              goto(ExpectingRealmCookieReadFromDAO)
+>>>>>>> Stashed changes
           }
         case _ =>
           log.info(">> Received MCP packet {}", id)
@@ -44,7 +54,14 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
   }
 
   when (ExpectingRealmCookieReadFromDAO) {
+<<<<<<< Updated upstream
 
+=======
+    case Event(RealmReadCookieResponse(userId), _) =>
+      send(McpStartup(RESULT_SUCCESS))
+      log.info("<< Sent MCP_STARTUP")
+      goto(ExpectingLogon)
+>>>>>>> Stashed changes
   }
 
   when (ExpectingLogon) {

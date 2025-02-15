@@ -4,6 +4,7 @@ import akka.actor.Props
 import com.init6.Constants._
 import com.init6.channels.{User, UserError}
 import com.init6.coders.commands.Command
+import com.init6.coders.realm.packets.McpCharCreate.{McpCharCreate, RESULT_SUCCESS}
 import com.init6.servers.Remotable
 import com.init6.{Init6Component, Init6RemotingActor}
 
@@ -63,14 +64,16 @@ class DAOActor extends Init6RemotingActor {
       }
 
     case RealmReadCookie(cookie) =>
-      val userId = DAO.readRealmCookie(cookie)
+      val userId = DAO.realmReadCookie(cookie)
       if (isLocal()) {
-        sender() ! RealmReadCookieResponse(userId)
+        userId.map { record =>
+          sender() ! RealmReadCookieResponse(record.userId)
+        }
       }
 
     case RealmCreateCharacter(userId, name, clazz, flags, ladder) =>
-      val result = DAO.createCharacter(userId, name, clazz, flags, ladder)
-      sender() ! RealmCreateCharacterAck(result)
+      DAO.createCharacter(userId, name, clazz, flags, ladder)
+      sender() ! RealmCreateCharacterAck(true) // not good
 
     case CreateAccount(username, passwordHash) =>
       DAO.createUser(username, passwordHash)
