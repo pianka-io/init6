@@ -2,6 +2,7 @@ package com.init6.coders.binary.packets
 
 import akka.util.ByteString
 import com.init6.coders.binary.BinaryPacket
+
 import java.io.File
 
 object SidGetIconData extends BinaryPacket {
