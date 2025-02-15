@@ -26,10 +26,10 @@ object SidLogonRealmEx extends BinaryPacket {
    * (UINT32)[12] MCP Chunk 2
    * (STRING)     Battle.net unique name (* as of D2 1.14d, this is empty)
    */
-  def apply(): ByteString = {
+  def apply(cookie: Int): ByteString = {
     build(
       ByteString.newBuilder
-        .putInt(0xDEADBEEF) // cookie
+        .putInt(cookie) // cookie
         .putInt(0x00000000) // status
         .putInt(0x33316163) // mcp chunk 1.1
         .putInt(0x65303830) // mcp chunk 1.2

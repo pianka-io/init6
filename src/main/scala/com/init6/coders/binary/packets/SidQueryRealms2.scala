@@ -21,7 +21,7 @@ object SidQueryRealms2 extends BinaryPacket {
         .putInt(1) // count
         .putInt(1) // unknown
         .putBytes("Sanctuary") // title
-        .putBytes("Diablo II on ini6 in 2025") // description
+        .putBytes("Diablo II on init6 in 2025") // description
         .result()
     )
   }

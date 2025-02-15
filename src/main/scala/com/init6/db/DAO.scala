@@ -42,6 +42,29 @@ object DAO {
     session.close()
   }
 
+  object DbRealmCookie extends SQLSyntaxSupport[DbRealmCookie] {
+    override val tableName = "realm_cookies"
+
+    def apply(rs: WrappedResultSet) = new DbRealmCookie(
+      rs.int(1),
+      rs.long(2)
+    )
+  }
+
+  private[db] def createRealmCookie(userId: Long) = {
+    DB localTx { implicit session =>
+      withSQL {
+        insertInto(DbRealmCookie)
+          .values(
+            None,
+            userId
+          )
+      }
+      .updateAndReturnGeneratedKey()
+      .apply()
+    }
+  }
+
   object DbUser extends SQLSyntaxSupport[DbUser] {
     override val tableName = "users"
 
