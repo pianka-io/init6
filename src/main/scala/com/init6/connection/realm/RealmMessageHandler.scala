@@ -33,11 +33,17 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
           log.info(">> Received MCP_STARTUP")
           data match {
             case McpStartup(packet) =>
+<<<<<<< HEAD
               log.info(">> Retrieving realm cookie")
               goto(ExpectingRealmCookieReadFromDAO)
 //              send(McpStartup(RESULT_SUCCESS))
 //              log.info("<< Sent MCP_STARTUP")
 //              goto(ExpectingLogon)
+=======
+              send(McpStartup(RESULT_SUCCESS))
+              log.info("<< Sent MCP_STARTUP")
+              goto(ExpectingLogon)
+>>>>>>> realm
           }
         case _ =>
           log.info(">> Received MCP packet {}", id)
@@ -49,10 +55,14 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
   }
 
   when (ExpectingRealmCookieReadFromDAO) {
+<<<<<<< HEAD
     case Event(RealmReadCookieResponse(userId), _) =>
       send(McpStartup(RESULT_SUCCESS))
       log.info("<< Sent MCP_STARTUP")
       goto(ExpectingLogon)
+=======
+
+>>>>>>> realm
   }
 
   when (ExpectingLogon) {
