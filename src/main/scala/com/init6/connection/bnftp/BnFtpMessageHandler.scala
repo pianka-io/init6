@@ -33,8 +33,6 @@ object BnFtpMessageHandler {
 
 class BnFtpMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliveActor with FSM[BnFtpState, ActorRef] {
 
-  implicit val timeout = Timeout(500, TimeUnit.MILLISECONDS)
-
   startWith(RequestState, ActorRef.noSender)
   context.watch(connectionInfo.actor)
 
@@ -46,13 +44,13 @@ class BnFtpMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
     case Event(BnFtpPacket(version, data), _) =>
       data match {
         case BnFtpV1(packet) =>
-          if (log.isDebugEnabled) {
-            log.debug("<< {} {}", connectionInfo.actor, f"Sending ${packet.fileName}")
-          }
+          log.debug("<< {} {}", connectionInfo.actor, f"Sending ${packet.fileName}")
           send(BnFtpV1(packet.fileStartPosition, new File("bnftp/" + packet.fileName)))
       }
       stay()
-    case _ => stop()
+    case x =>
+      log.debug(">> received unknown bnftp event {}", x.toString)
+      stay()
   }
 
   onTermination {
