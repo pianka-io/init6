@@ -4,7 +4,7 @@ import akka.util.ByteString
 
 object Statstring {
 
-  def apply(clazz: Byte, flags: Byte, ladder: Byte): Statstring = {
+  def apply(clazz: Byte, flags: Byte): Statstring = {
     Statstring(
       Unknown_1           = 0x84.toByte,
       Unknown_2           = 0x80.toByte,
@@ -36,7 +36,7 @@ object Statstring {
       Act                 = 0x80.toByte, // normal act 1
       Unknown_3           = 0xFF.toByte, // i think this field is documented incorrectly (0x80 = never logged in, 0xFF = has logged in)
       Unknown_4           = 0xFF.toByte, // i think this field is documented incorrectly (0x80 = never logged in, 0xFF = has logged in)
-      Ladder              = ladder,
+      Ladder              = flags,
       Unknown_5           = 0xFF.toByte,
       Unknown_6           = 0xFF.toByte
     )

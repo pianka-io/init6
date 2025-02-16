@@ -5,10 +5,8 @@ import akka.util.ByteString
 import com.init6.coders.realm.packets.{McpCharCreate, McpCharList2, McpStartup, Packets}
 import com.init6.coders.realm.packets.McpStartup.RESULT_SUCCESS
 import com.init6.connection.{ConnectionInfo, Init6KeepAliveActor, WriteOut}
-<<<<<<< Updated upstream
-=======
-import com.init6.db.{RealmReadCookie, RealmReadCookieResponse}
->>>>>>> Stashed changes
+import com.init6.db.{RealmCreateCharacter, RealmReadCookie, RealmReadCookieResponse}
+
 
 sealed trait RealmState
 case object ExpectingStartup extends RealmState
@@ -24,6 +22,8 @@ object RealmMessageHandler {
 
 class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliveActor with FSM[RealmState, ActorRef] {
 
+  var userId: Long = _
+
   startWith(ExpectingStartup, ActorRef.noSender)
   context.watch(connectionInfo.actor)
 
@@ -34,15 +34,9 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
           log.info(">> Received MCP_STARTUP")
           data match {
             case McpStartup(packet) =>
-<<<<<<< Updated upstream
-              send(McpStartup(RESULT_SUCCESS))
-              log.info("<< Sent MCP_STARTUP")
-              goto(ExpectingLogon)
-=======
               log.info(">> Retrieving realm cookie")
               daoActor ! RealmReadCookie(packet.cookie)
               goto(ExpectingRealmCookieReadFromDAO)
->>>>>>> Stashed changes
           }
         case _ =>
           log.info(">> Received MCP packet {}", id)
@@ -54,14 +48,11 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
   }
 
   when (ExpectingRealmCookieReadFromDAO) {
-<<<<<<< Updated upstream
-
-=======
     case Event(RealmReadCookieResponse(userId), _) =>
       send(McpStartup(RESULT_SUCCESS))
+      this.userId = userId
       log.info("<< Sent MCP_STARTUP")
       goto(ExpectingLogon)
->>>>>>> Stashed changes
   }
 
   when (ExpectingLogon) {
@@ -76,7 +67,7 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
           log.info(">> Received MCP_CHARCREATE")
           data match {
             case McpCharCreate(packet) =>
-              daoActor ! RealmCreateCharacter()
+              daoActor ! RealmCreateCharacter(userId, packet.name, packet.clazz, packet.flags)
               stay()
             case _ => stop()
           }

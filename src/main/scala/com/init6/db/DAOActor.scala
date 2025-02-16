@@ -45,7 +45,7 @@ case class RealmCreateCookie(userId: Long) extends Command
 case class RealmCreateCookieAck(cookie: Int) extends Command
 case class RealmReadCookie(cookie: Int) extends Command
 case class RealmReadCookieResponse(userId: Long) extends Command
-case class RealmCreateCharacter(userId: Long, name: String, clazz: Int, flags: Int, ladder: Int) extends Command
+case class RealmCreateCharacter(userId: Long, name: String, clazz: Int, flags: Int) extends Command
 case class RealmCreateCharacterAck(success: Boolean) extends Command
 
 class DAOActor extends Init6RemotingActor {
@@ -71,8 +71,8 @@ class DAOActor extends Init6RemotingActor {
         }
       }
 
-    case RealmCreateCharacter(userId, name, clazz, flags, ladder) =>
-      DAO.createCharacter(userId, name, clazz, flags, ladder)
+    case RealmCreateCharacter(userId, name, clazz, flags) =>
+      DAO.createCharacter(userId, name, clazz, flags)
       sender() ! RealmCreateCharacterAck(true) // not good
 
     case CreateAccount(username, passwordHash) =>

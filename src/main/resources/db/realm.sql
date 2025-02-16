@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS realm_characters (
     name VARCHAR(16),
     class INT,
     flags INT,
-    ladder INT,
     statstring VARBINARY(33),
     PRIMARY KEY(id)
 );
