@@ -338,7 +338,6 @@ class UserActor(connectionInfo: ConnectionInfo, var user: User, encoder: Encoder
 
             case command: FriendsCommand =>
               handleFriendsCommand(command)
-
             //ADMIN
             case command@BroadcastCommand(message) =>
               usersActor ! command
