@@ -95,8 +95,8 @@ object DAO {
     )
   }
 
-  private[db] def createCharacter(userId: Long, name: String, clazz: Int, flags: Int, ladder: Int): Unit = {
-    val statstring = Statstring(clazz.toByte, flags.toByte, ladder.toByte)
+  private[db] def createCharacter(userId: Long, name: String, clazz: Int, flags: Int): Unit = {
+    val statstring = Statstring(clazz.toByte, flags.toByte)
 
     DB localTx { implicit session =>
       withSQL {
@@ -107,7 +107,6 @@ object DAO {
             name,
             clazz,
             flags,
-            ladder,
             statstring
           )
       }

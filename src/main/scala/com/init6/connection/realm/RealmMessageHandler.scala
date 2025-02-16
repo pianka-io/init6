@@ -5,7 +5,8 @@ import akka.util.ByteString
 import com.init6.coders.realm.packets.{McpCharCreate, McpCharList2, McpStartup, Packets}
 import com.init6.coders.realm.packets.McpStartup.RESULT_SUCCESS
 import com.init6.connection.{ConnectionInfo, Init6KeepAliveActor, WriteOut}
-import com.init6.db.RealmReadCookieResponse
+import com.init6.db.{RealmCreateCharacter, RealmReadCookie, RealmReadCookieResponse}
+
 
 sealed trait RealmState
 case object ExpectingStartup extends RealmState
@@ -33,17 +34,9 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
           log.info(">> Received MCP_STARTUP")
           data match {
             case McpStartup(packet) =>
-<<<<<<< HEAD
               log.info(">> Retrieving realm cookie")
+              daoActor ! RealmReadCookie(packet.cookie)
               goto(ExpectingRealmCookieReadFromDAO)
-//              send(McpStartup(RESULT_SUCCESS))
-//              log.info("<< Sent MCP_STARTUP")
-//              goto(ExpectingLogon)
-=======
-              send(McpStartup(RESULT_SUCCESS))
-              log.info("<< Sent MCP_STARTUP")
-              goto(ExpectingLogon)
->>>>>>> realm
           }
         case _ =>
           log.info(">> Received MCP packet {}", id)
@@ -55,14 +48,15 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
   }
 
   when (ExpectingRealmCookieReadFromDAO) {
-<<<<<<< HEAD
     case Event(RealmReadCookieResponse(userId), _) =>
       send(McpStartup(RESULT_SUCCESS))
       log.info("<< Sent MCP_STARTUP")
       goto(ExpectingLogon)
-=======
-
->>>>>>> realm
+    case Event(RealmReadCookieResponse(userId), _) =>
+      send(McpStartup(RESULT_SUCCESS))
+      this.userId = userId
+      log.info("<< Sent MCP_STARTUP")
+      goto(ExpectingLogon)
   }
 
   when (ExpectingLogon) {
@@ -77,7 +71,7 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
           log.info(">> Received MCP_CHARCREATE")
           data match {
             case McpCharCreate(packet) =>
-//              daoActor ! RealmCreateCharacter()
+              daoActor ! RealmCreateCharacter(userId, packet.name, packet.clazz, packet.flags)
               stay()
             case _ => stop()
           }
