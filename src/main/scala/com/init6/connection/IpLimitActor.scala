@@ -6,7 +6,7 @@ import com.init6.channels.{UserInfo, UserInfoArray}
 import com.init6.coders.IPUtils
 import com.init6.coders.commands.{PrintConnectionLimit, UnIpBanCommand}
 import com.init6.{Config, Init6Component, Init6RemotingActor}
-
+import sys.process._
 import scala.collection.mutable
 
 /**
@@ -28,7 +28,6 @@ class IpLimitActor(limit: Int) extends Init6RemotingActor {
 
   val actorToIp = mutable.HashMap.empty[ActorRef, Int]
   val ipCount = mutable.HashMap.empty[Int, Int]
-//  val ipConnectionTimes = mutable.HashMap.empty[Int, mutable.PriorityQueue[Long]]
   val ipTotalCount = mutable.HashMap.empty[Int, Int]
   val ipBanned = mutable.HashMap.empty[Int, Long]
 
@@ -54,10 +53,12 @@ class IpLimitActor(limit: Int) extends Init6RemotingActor {
       ) {
         sender() ! NotAllowed(connectionInfo)
       } else {
+        val address = connectionInfo.ipAddress.getAddress.getHostAddress
         val addressInt = IPUtils.bytesToDword(connectionInfo.ipAddress.getAddress.getAddress)
         val current = ipCount.getOrElse(addressInt, 0)
         if (!addIpConnection(addressInt)) {
           ipBanned += addressInt -> (System.currentTimeMillis() + (Config().AntiFlood.ReconnectLimit.ipBanTime * 1000))
+          s"nft add rule inet filter input ip saddr ${address} drop".!
         }
         val isIpBanned = ipBanned.get(addressInt).exists(until => {
           if (System.currentTimeMillis >= until) {
