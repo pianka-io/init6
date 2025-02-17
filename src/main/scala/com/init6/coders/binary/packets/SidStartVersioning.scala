@@ -13,7 +13,7 @@ object SidStartVersioning extends BinaryPacket {
 
   override val PACKET_ID: Byte = Packets.SID_STARTVERSIONING
 
-  val LAST_MODIFIED = new File("bnftp/ver-IX86-0.mpq").lastModified()
+  val LAST_MODIFIED = new File("src/main/resources/bnftp/ver-IX86-0.mpq").lastModified()
 
   def apply(): ByteString = {
     build(

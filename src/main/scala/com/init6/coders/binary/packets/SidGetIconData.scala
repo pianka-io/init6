@@ -8,7 +8,7 @@ object SidGetIconData extends BinaryPacket {
 
   case class SidGetIconData()
 
-  val LAST_MODIFIED = new File("bnftp/icons.bni").lastModified()
+  val LAST_MODIFIED = new File("src/main/resources/bnftp/icons.bni").lastModified()
 
   override val PACKET_ID = Packets.SID_GETICONDATA
 

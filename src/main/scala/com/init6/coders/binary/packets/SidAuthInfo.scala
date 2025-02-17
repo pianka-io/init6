@@ -13,7 +13,7 @@ object SidAuthInfo extends BinaryPacket {
 
   override val PACKET_ID = Packets.SID_AUTH_INFO
 
-  val LAST_MODIFIED = new File("bnftp/ver-IX86-0.mpq").lastModified()
+  val LAST_MODIFIED = new File("src/main/resources/bnftp/ver-IX86-0.mpq").lastModified()
 
   def apply(serverToken: Int, udpToken: Int = 0xDEADBEEF): ByteString = {
     build(

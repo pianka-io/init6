@@ -5,7 +5,7 @@ import com.init6.Constants._
 import com.init6.channels.{UserInfo, UserInfoArray}
 import com.init6.coders.IPUtils
 import com.init6.coders.commands.{PrintConnectionLimit, UnIpBanCommand}
-import com.init6.{Config, Init6Component, Init6RemotingActor}
+import com.init6.{Config, Init6Actor, Init6Component, Init6LoggingActor, Init6RemotingActor}
 
 import scala.collection.mutable
 
@@ -22,7 +22,7 @@ case class Allowed(connectionInfo: ConnectionInfo)
 case class NotAllowed(connectionInfo: ConnectionInfo)
 case class IpBan(address: Array[Byte], until: Long)
 
-class IpLimitActor(limit: Int) extends Init6RemotingActor {
+class IpLimitActor(limit: Int) extends Init6RemotingActor with Init6Actor with Init6LoggingActor {
 
   override val actorPath = INIT6_IP_LIMITER_PATH
 
@@ -56,7 +56,7 @@ class IpLimitActor(limit: Int) extends Init6RemotingActor {
     }
   }
 
-  override def receive: Receive = {
+  override def loggedReceive: Receive = {
     case Connected(connectionInfo) =>
       if (
         Config().Accounts.enableIpWhitelist &&
@@ -67,10 +67,12 @@ class IpLimitActor(limit: Int) extends Init6RemotingActor {
         val addressInt = IPUtils.bytesToDword(connectionInfo.ipAddress.getAddress.getAddress)
         val current = ipCount.getOrElse(addressInt, 0)
         if (!addIpConnection(addressInt)) {
+          log.debug("IP BANNED - Reconnect Limit: " + addressInt)
           ipBanned += addressInt -> (System.currentTimeMillis() + (Config().AntiFlood.ReconnectLimit.ipBanTime * 1000))
         }
         val isIpBanned = ipBanned.get(addressInt).exists(until => {
           if (System.currentTimeMillis >= until) {
+            log.debug("IP UNBANNED: " + addressInt)
             ipBanned -= addressInt
             false
           } else {
@@ -101,11 +103,13 @@ class IpLimitActor(limit: Int) extends Init6RemotingActor {
 
     case IpBan(address, until) =>
       val addressInt = IPUtils.bytesToDword(address)
+      log.debug("IP BANNED: " + addressInt + " until " + until)
       ipBanned += addressInt -> until
       sender() ! UserInfo(IPBANNED(IPUtils.dwordToString(addressInt)))
 
     case UnIpBanCommand(address) =>
       val addressInt = IPUtils.bytesToDword(address)
+      log.debug("IP UNBANNED: " + addressInt)
       ipBanned -= addressInt
       sender() ! UserInfo(UNIPBANNED(IPUtils.dwordToString(addressInt)))
 

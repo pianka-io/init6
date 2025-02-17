@@ -17,7 +17,7 @@ object SidGetFileTime extends BinaryPacket {
       ByteString.newBuilder
         .putInt(requestId)
         .putInt(0)
-        .putLong(new File("bnftp/" + fileName).lastModified())
+        .putLong(new File("src/main/resources/bnftp/" + fileName).lastModified())
         .putBytes(fileName)
         .result()
     )

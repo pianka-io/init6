@@ -55,7 +55,7 @@ class DAOActor extends Init6RemotingActor {
     case ReloadDb =>
       DAO.reloadCache()
       sender() ! ReloadDbAck
-
+/*
     case RealmCreateCookie(userId) =>
       val cookie = DAO.createRealmCookie(userId)
       if (isLocal()) {
@@ -70,7 +70,7 @@ class DAOActor extends Init6RemotingActor {
 
     case RealmCreateCharacter(userId, name, clazz, flags, ladder) =>
       val result = DAO.createCharacter(userId, name, clazz, flags, ladder)
-      sender() ! RealmCreateCharacterAck(result)
+      sender() ! RealmCreateCharacterAck(result)*/
 
     case CreateAccount(username, passwordHash) =>
       DAO.createUser(username, passwordHash)

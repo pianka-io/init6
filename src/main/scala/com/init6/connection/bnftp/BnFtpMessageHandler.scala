@@ -49,7 +49,7 @@ class BnFtpMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
           if (log.isDebugEnabled) {
             log.debug("<< {} {}", connectionInfo.actor, f"Sending ${packet.fileName}")
           }
-          send(BnFtpV1(packet.fileStartPosition, new File("bnftp/" + packet.fileName)))
+          send(BnFtpV1(packet.fileStartPosition, new File("src/main/resources/bnftp/" + packet.fileName)))
       }
       stay()
     case _ => stop()

@@ -20,7 +20,7 @@ object RealmMessageHandler {
 }
 
 class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliveActor with FSM[RealmState, ActorRef] {
-
+/*
   var userId: Long = _
 
   startWith(ExpectingStartup, ActorRef.noSender)
@@ -95,5 +95,5 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
 
   def send(data: ByteString): Unit = {
     connectionInfo.actor ! WriteOut(data)
-  }
+  }*/
 }

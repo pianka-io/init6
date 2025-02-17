@@ -339,6 +339,8 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
       goto(ExpectingSidEnterChat) using userActor
     case Event(UsersUserNotAdded(), _) =>
       stop()
+    case Event(WrittenOut, _) =>
+      stay()
     case x =>
       log.debug(">> {} Unhandled in ExpectingLogon2Handled {}", connectionInfo.actor, x)
       stop()
