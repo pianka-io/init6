@@ -4,6 +4,7 @@ import akka.actor.Props
 import com.init6.Constants._
 import com.init6.channels.{User, UserError}
 import com.init6.coders.commands.Command
+import com.init6.coders.realm.packets.McpCharCreate.{McpCharCreate, RESULT_SUCCESS}
 import com.init6.servers.Remotable
 import com.init6.{Init6Component, Init6RemotingActor}
 
@@ -40,6 +41,13 @@ case class DAOFriendsRemove(userId: Long, who: String) extends Command
 case class DAOFriendsRemoveResponse(friends: Seq[DbFriend], removedFriend: DbFriend) extends Command
 case class DAOUpdateLoggedInTime(username: String) extends Command
 
+case class RealmCreateCookie(userId: Long) extends Command
+case class RealmCreateCookieAck(cookie: Int) extends Command
+case class RealmReadCookie(cookie: Int) extends Command
+case class RealmReadCookieResponse(userId: Long) extends Command
+case class RealmCreateCharacter(userId: Long, name: String, clazz: Int, flags: Int) extends Command
+case class RealmCreateCharacterAck(success: Boolean) extends Command
+
 class DAOActor extends Init6RemotingActor {
 
   override val actorPath = INIT6_DAO_PATH
@@ -48,6 +56,24 @@ class DAOActor extends Init6RemotingActor {
     case ReloadDb =>
       DAO.reloadCache()
       sender() ! ReloadDbAck
+
+    case RealmCreateCookie(userId) =>
+      val cookie = DAO.createRealmCookie(userId)
+      if (isLocal()) {
+        sender() ! RealmCreateCookieAck(cookie.toInt)
+      }
+
+    case RealmReadCookie(cookie) =>
+      val userId = DAO.realmReadCookie(cookie)
+      if (isLocal()) {
+        userId.map { record =>
+          sender() ! RealmReadCookieResponse(record.userId)
+        }
+      }
+
+    case RealmCreateCharacter(userId, name, clazz, flags) =>
+      DAO.createCharacter(userId, name, clazz, flags)
+      sender() ! RealmCreateCharacterAck(true) // not good
 
     case CreateAccount(username, passwordHash) =>
       DAO.createUser(username, passwordHash)

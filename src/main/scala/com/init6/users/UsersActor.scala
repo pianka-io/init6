@@ -38,6 +38,7 @@ object UsersActor extends Init6Component {
 trait Protocol extends Command
 case object NotYetKnownProtocol extends Protocol
 case object BinaryProtocol extends Protocol
+case object RealmProtocol extends Protocol
 case object TelnetProtocol extends Protocol
 case object Chat1Protocol extends Protocol
 
