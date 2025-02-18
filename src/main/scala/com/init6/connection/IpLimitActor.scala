@@ -58,7 +58,7 @@ class IpLimitActor(limit: Int) extends Init6RemotingActor {
         val current = ipCount.getOrElse(addressInt, 0)
         if (!addIpConnection(addressInt)) {
           ipBanned += addressInt -> (System.currentTimeMillis() + (Config().AntiFlood.ReconnectLimit.ipBanTime * 1000))
-          s"nft add rule inet filter input ip saddr ${address} drop".!
+          s"sudo nft add rule inet filter input ip saddr ${address} drop".!
         }
         val isIpBanned = ipBanned.get(addressInt).exists(until => {
           if (System.currentTimeMillis >= until) {
