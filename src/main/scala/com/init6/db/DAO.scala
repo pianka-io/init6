@@ -1,6 +1,7 @@
 package com.init6.db
 
 import com.init6.Config
+import com.init6.realm.Statstring
 import scalikejdbc._
 
 /**
@@ -40,6 +41,78 @@ object DAO {
   def close() = {
     userCache.close()
     session.close()
+  }
+
+  object DbRealmCookie extends SQLSyntaxSupport[DbRealmCookie] {
+    override val tableName = "realm_cookies"
+
+    def apply(rs: WrappedResultSet) = new DbRealmCookie(
+      rs.int(1),
+      rs.long(2)
+    )
+  }
+
+  private[db] def createRealmCookie(userId: Long) = {
+    DB localTx { implicit session =>
+      withSQL {
+        insertInto(DbRealmCookie)
+          .values(
+            None,
+            userId
+          )
+      }
+      .updateAndReturnGeneratedKey()
+      .apply()
+    }
+  }
+
+  private[db] def realmReadCookie(cookie: Int): Option[DbRealmCookie] = {
+    DB readOnly { implicit session =>
+      val c = DbRealmCookie.syntax("c")
+
+      withSQL {
+        select(c.result.id, c.result.userId)
+          .from(DbRealmCookie as c)
+          .where.eq(c.id, cookie)
+      }
+      .map(rs => com.init6.db.DbRealmCookie(rs.int(c.resultName.id), rs.long(c.resultName.userId)))
+      .single()
+      .apply()
+    }
+  }
+
+  object DbRealmCharacter extends SQLSyntaxSupport[DbRealmCharacter] {
+    override val tableName = "realm_characters"
+
+    def apply(rs: WrappedResultSet) = new DbRealmCharacter(
+      rs.int(1),
+      rs.long(2),
+      rs.string(3),
+      rs.int(4),
+      rs.int(5),
+      rs.int(6),
+      rs.bytes(7)
+    )
+  }
+
+  private[db] def createCharacter(userId: Long, name: String, clazz: Int, flags: Int): Unit = {
+    val statstring = Statstring(clazz.toByte, flags.toByte)
+
+    DB localTx { implicit session =>
+      withSQL {
+        insertInto(DbRealmCharacter)
+          .values(
+            None,
+            userId,
+            name,
+            clazz,
+            flags,
+            statstring
+          )
+      }
+      .updateAndReturnGeneratedKey()
+      .apply()
+    }
   }
 
   object DbUser extends SQLSyntaxSupport[DbUser] {

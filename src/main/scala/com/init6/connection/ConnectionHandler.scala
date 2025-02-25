@@ -43,7 +43,7 @@ class ConnectionHandler(host: String, port: Int)
 
   when(Bound) {
     case Event(Tcp.Connected(remote, _), _) =>
-      val rawConnectionInfo = ConnectionInfo(remote, sender(), getAcceptingUptime.toNanos)
+      val rawConnectionInfo = ConnectionInfo(remote, port, sender(), getAcceptingUptime.toNanos)
       log.debug("Address {} connected", remote.getAddress.getHostAddress)
       ipLimiterActor ! Connected(rawConnectionInfo)
       stay()
