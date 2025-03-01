@@ -27,6 +27,7 @@ case class Add(connectionInfo: ConnectionInfo, user: User, protocol: Protocol) e
 case class RemoteAdd(userActor: ActorRef, username: String) extends Command
 case class Rem(ipAddress: InetSocketAddress, userActor: ActorRef) extends Command with Remotable
 case class RemActors(userActors: Set[ActorRef]) extends Command
+case class Statstring() extends Command
 
 case class WhisperTo(user: User, username: String, message: String)  extends Command
 case object SubscribeAll
