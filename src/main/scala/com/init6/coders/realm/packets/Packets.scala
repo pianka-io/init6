@@ -8,13 +8,8 @@ object Packets {
   val MCP_NULL: Byte = 0x00
   val MCP_STARTUP: Byte = 0x01
   val MCP_CHARCREATE: Byte = 0x02
-<<<<<<< Updated upstream
-  val MCP_GAME_CREATE: Byte = 0x03
-  val MCP_JOINGAME: Byte = 0x04
-=======
   val MCP_GAMECREATE: Byte = 0x03
   val MCP_GAMEJOIN: Byte = 0x04
->>>>>>> Stashed changes
   val MCP_GAMELIST: Byte = 0x05
   val MCP_GAMEINFO: Byte = 0x06
   val MCP_CHARLOGON: Byte = 0x07

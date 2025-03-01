@@ -11,7 +11,7 @@ import scala.util.Try
  */
 object McpGameCreate extends RealmPacket {
 
-  override val PACKET_ID: Byte = Packets.MCP_GAME_CREATE
+  override val PACKET_ID: Byte = Packets.MCP_GAMECREATE
 
   val RESULT_SUCCESS = 0x00
   val INVALID_NAME = 0x1E
