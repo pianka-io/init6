@@ -11,6 +11,7 @@ import com.init6.db.{RealmCreateCharacter, RealmCreateCharacterAck, RealmReadCha
 sealed trait RealmState
 case object ExpectingStartup extends RealmState
 case object ExpectingLogon extends RealmState
+case object ExpectingGame extends RealmState
 
 case object ExpectingRealmCookieReadFromDAO extends RealmState
 case object ExpectingRealmCharactersCreateFromDAO extends RealmState
