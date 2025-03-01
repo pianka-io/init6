@@ -56,10 +56,6 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
   when (ExpectingRealmCookieReadFromDAO) {
     case Event(RealmReadCookieResponse(userId, username), _) =>
       send(McpStartup(RESULT_SUCCESS))
-      log.info("<< Sent MCP_STARTUP")
-      goto(ExpectingLogon)
-    case Event(RealmReadCookieResponse(userId), _) =>
-      send(McpStartup(RESULT_SUCCESS))
       this.userId = userId
       this.username = username
       log.info("<< Sent MCP_STARTUP")
