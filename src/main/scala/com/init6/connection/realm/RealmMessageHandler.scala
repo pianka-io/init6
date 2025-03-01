@@ -2,10 +2,10 @@ package com.init6.connection.realm
 
 import akka.actor.{ActorRef, FSM, Props}
 import akka.util.ByteString
-import com.init6.coders.realm.packets.{McpCharCreate, McpCharList2, McpStartup, Packets}
+import com.init6.coders.realm.packets.{McpCharCreate, McpCharList2, McpCharLogon, McpStartup, Packets}
 import com.init6.coders.realm.packets.McpStartup.RESULT_SUCCESS
 import com.init6.connection.{ConnectionInfo, Init6KeepAliveActor, WriteOut}
-import com.init6.db.{RealmCreateCharacter, RealmReadCookie, RealmReadCookieResponse}
+import com.init6.db.{RealmCreateCharacter, RealmCreateCharacterAck, RealmReadCharacter, RealmReadCharacterResponse, RealmReadCharacters, RealmReadCharactersResponse, RealmReadCookie, RealmReadCookieResponse}
 
 
 sealed trait RealmState
@@ -13,6 +13,9 @@ case object ExpectingStartup extends RealmState
 case object ExpectingLogon extends RealmState
 
 case object ExpectingRealmCookieReadFromDAO extends RealmState
+case object ExpectingRealmCharactersCreateFromDAO extends RealmState
+case object ExpectingRealmCharactersReadFromDAO extends RealmState
+case object ExpectingRealmCharacterReadFromDAO extends RealmState
 
 case class RealmPacket(packetId: Byte, packet: ByteString)
 
@@ -62,22 +65,26 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
   when (ExpectingLogon) {
     case Event(RealmPacket(id, data), _) =>
       id match {
+        case Packets.MCP_CHARLOGON =>
+          log.info(">> Received MCP_CHARLOGON")
+          data match {
+            case McpCharLogon(packet) =>
+              daoActor ! RealmReadCharacter(userId, packet.name)
+              goto(ExpectingRealmCharacterReadFromDAO)
+            case _ => stop()
+          }
         case Packets.MCP_CHARLIST2 =>
           log.info(">> Received MCP_CHARLIST2")
-          send(McpCharList2())
-          log.info("<< Sent MCP_CHARLIST2")
-          stay()
+          daoActor ! RealmReadCharacters(userId)
+          goto(ExpectingRealmCharactersReadFromDAO)
         case Packets.MCP_CHARCREATE =>
           log.info(">> Received MCP_CHARCREATE")
           data match {
             case McpCharCreate(packet) =>
               daoActor ! RealmCreateCharacter(userId, packet.name, packet.clazz, packet.flags)
-              stay()
+              goto(ExpectingRealmCharactersCreateFromDAO)
             case _ => stop()
           }
-//          send(McpCharCreate())
-//          log.info("<< Sent MCP_CHARCREATE")
-//          stay()
         case _ =>
           log.info(">> Received MCP packet {}", id)
           stay()
@@ -85,6 +92,29 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
     case x =>
       log.info(">> Received {}", x.toString)
       stay()
+  }
+
+  when (ExpectingRealmCharactersReadFromDAO) {
+    case Event(RealmReadCharactersResponse(characters), _) =>
+      send(McpCharList2(characters))
+      log.info("<< Sent MCP_CHARLIST2")
+      goto(ExpectingLogon)
+  }
+
+  when (ExpectingRealmCharacterReadFromDAO) {
+    case Event(RealmReadCharacterResponse(character), _) =>
+      send(McpCharLogon(McpCharLogon.RESULT_SUCCESS))
+      log.info("<< Sent MCP_CHARLOGON")
+      // TODO(pianka): done?
+      goto(ExpectingLogon)
+  }
+
+  when (ExpectingRealmCharactersCreateFromDAO) {
+    case Event(RealmCreateCharacterAck(result), _) =>
+      // TODO(pianka): honor the result
+      send(McpCharCreate(RESULT_SUCCESS))
+      log.info("<< Sent MCP_CHARCREATE")
+      goto(ExpectingLogon)
   }
 
   def send(data: ByteString): Unit = {

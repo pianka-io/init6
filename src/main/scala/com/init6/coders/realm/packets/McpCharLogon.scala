@@ -7,17 +7,18 @@ import com.init6.coders.realm.RealmPacket
 import scala.util.Try
 
 /**
- * Created by pianka on 02/14/25.
+ * Created by pianka on 02/28/25.
  */
-object McpCharCreate extends RealmPacket {
+object McpCharLogon extends RealmPacket {
 
-  override val PACKET_ID: Byte = Packets.MCP_CHARCREATE
+  override val PACKET_ID: Byte = Packets.MCP_CHARLOGON
 
   val RESULT_SUCCESS = 0x00
-  val ALREADY_EXISTS = 0x14
-  val INVALID = 0x15
+  val CHARACTER_NOT_FOUND = 0x46
+  val LOGON_FAILED = 0x7A
+  val CHARACTER_EXPIRED = 0x7B
 
-  case class McpCharCreate(clazz: Int, flags: Int, name: String)
+  case class McpCharLogon(name: String)
 
   def apply(result: Int): ByteString = {
     build(
@@ -27,10 +28,10 @@ object McpCharCreate extends RealmPacket {
     )
   }
 
-  def unapply(data: ByteString): Option[McpCharCreate] = {
+  def unapply(data: ByteString): Option[McpCharLogon] = {
     Try {
       val debuffer = DeBuffer(data)
-      McpCharCreate(debuffer.dword() + 1, debuffer.word(), debuffer.string())
+      McpCharLogon(debuffer.string())
     }.toOption
   }
 }

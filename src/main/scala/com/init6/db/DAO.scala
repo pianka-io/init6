@@ -1,7 +1,8 @@
 package com.init6.db
 
+import akka.util.ByteString
 import com.init6.Config
-import com.init6.realm.Statstring
+import com.init6.realm.{Character, Statstring}
 import scalikejdbc._
 
 /**
@@ -90,8 +91,7 @@ object DAO {
       rs.string(3),
       rs.int(4),
       rs.int(5),
-      rs.int(6),
-      rs.bytes(7)
+      rs.bytes(6)
     )
   }
 
@@ -107,12 +107,35 @@ object DAO {
             name,
             clazz,
             flags,
-            statstring
+            statstring.toBytes.toArray
           )
       }
       .updateAndReturnGeneratedKey()
       .apply()
     }
+  }
+
+  private[db] def readCharacters(userId: Long): List[Character] = {
+    val c = DbRealmCharacter.syntax("c")
+
+    withSQL {
+      select
+        .from(DbRealmCharacter as c)
+        .where.eq(c.userId, userId)
+    }
+    .map(rs => com.init6.db.DbRealmCharacter(
+      rs.int(c.resultName.id),
+      rs.long(c.resultName.userId),
+      rs.string(c.resultName.name),
+      rs.int(c.resultName.`class`),
+      rs.int(c.resultName.flags),
+      rs.bytes(c.resultName.statstring)
+    ))
+    .list
+    .apply()
+    .map(a =>
+      Character(a.name, a.`class`, a.flags, 0, ByteString(a.statstring))
+    )
   }
 
   object DbUser extends SQLSyntaxSupport[DbUser] {

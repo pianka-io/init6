@@ -1,10 +1,14 @@
 package com.init6.realm
 
 import akka.util.ByteString
+import com.init6.realm.CharacterFlags.Ladder
+import com.init6.realm.LadderTypes.{NonLadder, Season1}
 
 object Statstring {
 
   def apply(clazz: Byte, flags: Byte): Statstring = {
+    val ladder = if ((flags & Ladder) == Ladder) Season1 else NonLadder
+
     Statstring(
       Unknown_1           = 0x84.toByte,
       Unknown_2           = 0x80.toByte,
@@ -36,7 +40,7 @@ object Statstring {
       Act                 = 0x80.toByte, // normal act 1
       Unknown_3           = 0xFF.toByte, // i think this field is documented incorrectly (0x80 = never logged in, 0xFF = has logged in)
       Unknown_4           = 0xFF.toByte, // i think this field is documented incorrectly (0x80 = never logged in, 0xFF = has logged in)
-      Ladder              = flags,
+      Ladder              = ladder.toByte,
       Unknown_5           = 0xFF.toByte,
       Unknown_6           = 0xFF.toByte
     )
