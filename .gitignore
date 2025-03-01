@@ -2,3 +2,7 @@
 *iml
 target
 GreetBot
+BnetLog.txt
+init6.log
+src/main/resources/aeron/
+src/main/resources/init6.log

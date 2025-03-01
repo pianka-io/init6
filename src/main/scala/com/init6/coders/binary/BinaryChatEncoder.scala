@@ -16,17 +16,9 @@ object BinaryChatEncoder extends Encoder {
   override def apply(data: Any): Option[ByteString] = {
     data match {
       case UserIn(user) =>
-        System.out.println("[BinaryChatEncoder] Statstring " + user.statstring)
-        System.out.println("[BinaryChatEncoder] Charstring " + user.character.get.statstring.toBytes)
-        System.out.println("[BinaryChatEncoder] Literal " + user.character.get.statstring.toBytes)
-        user.statstring match {
-          case Some(statstring) =>
-            SidChatEvent(0x01, user.flags, user.ping, "AMAZON* " + user.name, bytes = user.statstring.get)
-          case None =>
-            SidChatEvent(0x01, user.flags, user.ping, "AMAZON* " + user.name, text = user.client)
-        }
+        SidChatEvent(0x01, user.flags, user.ping, user.name, user.client)
       case UserJoined(user) =>
-        SidChatEvent(0x02, user.flags, user.ping, user.name, user.statstring.map(_.utf8String).getOrElse(user.client))
+        SidChatEvent(0x02, user.flags, user.ping, user.name, user.client)
       case UserLeft(user) =>
         SidChatEvent(0x03, user.flags, user.ping, user.name)
       case UserWhisperedFrom(user, message) =>
@@ -38,7 +30,7 @@ object BinaryChatEncoder extends Encoder {
       case UserChannel(user, channel, flags, _, _) =>
         SidChatEvent(0x07, flags, user.ping, user.name, channel)
       case UserFlags(user) =>
-        SidChatEvent(0x09, user.flags, user.ping, user.name, user.statstring.map(_.utf8String).getOrElse(user.client))
+        SidChatEvent(0x09, user.flags, user.ping, user.name, user.client)
       case UserWhisperedTo(user, message) =>
         SidChatEvent(0x0A, user.flags, user.ping, user.name, message)
       case UserInfo(message) =>

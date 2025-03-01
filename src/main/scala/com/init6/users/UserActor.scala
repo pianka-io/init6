@@ -9,7 +9,7 @@ import com.init6.Constants._
 import com.init6.channels._
 import com.init6.channels.utils.ChannelJoinValidator
 import com.init6.coders._
-import com.init6.coders.binary.BinaryChatEncoder
+import com.init6.coders.binary.{BinaryChatEncoder, BinaryChatEncoderDiablo}
 import com.init6.coders.chat1.Chat1Encoder
 import com.init6.coders.commands._
 import com.init6.coders.telnet._
@@ -29,7 +29,12 @@ object UserActor {
   def apply(connectionInfo: ConnectionInfo, user: User, protocol: Protocol) =
     Props(classOf[UserActor], connectionInfo, user,
       protocol match {
-        case BinaryProtocol => BinaryChatEncoder
+        case BinaryProtocol =>
+          user.client match {
+            case "VD2D" => BinaryChatEncoderDiablo
+            case "PX2D" => BinaryChatEncoderDiablo
+            case _ => BinaryChatEncoder
+          }
         case TelnetProtocol => TelnetEncoder
         case Chat1Protocol => Chat1Encoder
       }
@@ -43,7 +48,7 @@ case class UpdatePing(ping: Int) extends Command
 case object KillConnection extends Command
 case class DisconnectOnIp(ipAddress: Array[Byte]) extends Command
 
-class UserActor(connectionInfo: ConnectionInfo, var user: User, encoder: Encoder)
+class UserActor(connectionInfo: ConnectionInfo, var user: User, var encoder: Encoder)
   extends FloodPreventer with Init6Actor with Init6LoggingActor {
 
   import context.dispatcher
