@@ -46,6 +46,7 @@ case class User(
   flags: Long = 0,
   ping: Long = 0,
   client: String = "CHAT",
+  var statstring: Option[String] = None,
 
   // Changeable
   inChannel: String = "",
