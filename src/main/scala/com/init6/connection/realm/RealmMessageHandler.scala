@@ -6,6 +6,7 @@ import com.init6.coders.realm.packets.{McpCharCreate, McpCharList2, McpCharLogon
 import com.init6.coders.realm.packets.McpStartup.RESULT_SUCCESS
 import com.init6.connection.{ConnectionInfo, Init6KeepAliveActor, WriteOut}
 import com.init6.db.{RealmCreateCharacter, RealmCreateCharacterAck, RealmReadCharacter, RealmReadCharacterResponse, RealmReadCharacters, RealmReadCharactersResponse, RealmReadCookie, RealmReadCookieResponse}
+import com.init6.users.SetCharacter
 
 
 sealed trait RealmState
@@ -26,6 +27,7 @@ object RealmMessageHandler {
 class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliveActor with FSM[RealmState, ActorRef] {
 
   var userId: Long = _
+  var username: String = _
 
   startWith(ExpectingStartup, ActorRef.noSender)
   context.watch(connectionInfo.actor)
@@ -51,9 +53,10 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
   }
 
   when (ExpectingRealmCookieReadFromDAO) {
-    case Event(RealmReadCookieResponse(userId), _) =>
+    case Event(RealmReadCookieResponse(userId, username), _) =>
       send(McpStartup(RESULT_SUCCESS))
       this.userId = userId
+      this.username = username
       log.info("<< Sent MCP_STARTUP")
       goto(ExpectingLogon)
   }
@@ -94,6 +97,7 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
     case Event(RealmReadCharactersResponse(characters), _) =>
       send(McpCharList2(characters))
       log.info("<< Sent MCP_CHARLIST2")
+      // TODO(pianka): update user's statstring
       goto(ExpectingLogon)
   }
 
@@ -101,19 +105,26 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
     case Event(RealmReadCharacterResponse(character), _) =>
       send(McpCharLogon(McpCharLogon.RESULT_SUCCESS))
       log.info("<< Sent MCP_CHARLOGON")
-      // TODO(pianka): done?
-      goto(ExpectingLogon)
+      sendCharacter(character)
+      log.info("<< Sent MCP_CHARCREATE")
+      goto(ExpectingGame)
   }
 
   when (ExpectingRealmCharactersCreateFromDAO) {
-    case Event(RealmCreateCharacterAck(result), _) =>
+    case Event(RealmCreateCharacterAck(result, character), _) =>
       // TODO(pianka): honor the result
       send(McpCharCreate(RESULT_SUCCESS))
+      log.info("<< Sent MCP_CHARCREATE")
+      sendCharacter(character)
       log.info("<< Sent MCP_CHARCREATE")
       goto(ExpectingLogon)
   }
 
   def send(data: ByteString): Unit = {
     connectionInfo.actor ! WriteOut(data)
+  }
+
+  private def sendCharacter(character: com.init6.realm.Character): Unit = {
+    usersActor ! SetCharacter(username, character)
   }
 }

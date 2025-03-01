@@ -95,9 +95,7 @@ object DAO {
     )
   }
 
-  private[db] def createCharacter(userId: Long, name: String, clazz: Int, flags: Int): Unit = {
-    val statstring = Statstring(clazz.toByte, flags.toByte)
-
+  private[db] def createCharacter(userId: Long, name: String, clazz: Int, flags: Int, statstring: Statstring): Unit = {
     DB localTx { implicit session =>
       withSQL {
         insertInto(DbRealmCharacter)
@@ -134,7 +132,7 @@ object DAO {
     .list
     .apply()
     .map(a =>
-      Character(a.name, a.`class`, a.flags, 0, ByteString(a.statstring))
+      Character(a.name, a.`class`, a.flags, 0, Statstring(ByteString(a.statstring)))
     )
   }
 
@@ -180,6 +178,7 @@ object DAO {
   }
 
   def getUser(username: String) = userCache.get(username)
+  def getUser(userId: Long) = userCache.get(userId)
 
   private[db] def saveInserted(inserted: Iterable[DbUser]) = {
     if (inserted.nonEmpty) {

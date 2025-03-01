@@ -5,6 +5,7 @@ import com.init6.Constants._
 import com.init6.channels.{User, UserError}
 import com.init6.coders.commands.Command
 import com.init6.coders.realm.packets.McpCharCreate.{McpCharCreate, RESULT_SUCCESS}
+import com.init6.realm.Statstring
 import com.init6.servers.Remotable
 import com.init6.{Init6Component, Init6RemotingActor}
 
@@ -44,9 +45,9 @@ case class DAOUpdateLoggedInTime(username: String) extends Command
 case class RealmCreateCookie(userId: Long) extends Command
 case class RealmCreateCookieAck(cookie: Int) extends Command
 case class RealmReadCookie(cookie: Int) extends Command
-case class RealmReadCookieResponse(userId: Long) extends Command
+case class RealmReadCookieResponse(userId: Long, username: String) extends Command
 case class RealmCreateCharacter(userId: Long, name: String, clazz: Int, flags: Int) extends Command
-case class RealmCreateCharacterAck(success: Boolean) extends Command
+case class RealmCreateCharacterAck(success: Boolean, character: com.init6.realm.Character) extends Command
 case class RealmReadCharacters(userId: Long) extends Command
 case class RealmReadCharactersResponse(characters: List[com.init6.realm.Character]) extends Command
 case class RealmReadCharacter(userId: Long, name: String) extends Command
@@ -72,7 +73,7 @@ class DAOActor extends Init6RemotingActor {
       // TODO(pianka): handle failures
       if (isLocal()) {
         userId.map { record =>
-          sender() ! RealmReadCookieResponse(record.userId)
+          sender() ! RealmReadCookieResponse(record.userId, DAO.getUser(record.userId).get.username)
         }
       }
 
@@ -92,9 +93,11 @@ class DAOActor extends Init6RemotingActor {
       }
 
     case RealmCreateCharacter(userId, name, clazz, flags) =>
-      DAO.createCharacter(userId, name, clazz, flags)
+      val statstring = Statstring(clazz.toByte, flags.toByte)
+      val character = com.init6.realm.Character(name, clazz, flags, statstring.Ladder, statstring)
+      DAO.createCharacter(userId, name, clazz, flags, statstring)
       // TODO(pianka): handle failures
-      sender() ! RealmCreateCharacterAck(true) // not good
+      sender() ! RealmCreateCharacterAck(success = true, character)
 
     case CreateAccount(username, passwordHash) =>
       DAO.createUser(username, passwordHash)
