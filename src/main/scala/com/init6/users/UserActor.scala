@@ -1,11 +1,10 @@
 package com.init6.users
 
 import java.util.concurrent.TimeUnit
-
 import akka.actor.{ActorRef, PoisonPill, Props, Terminated}
 import akka.io.Tcp.{Abort, Received, ResumeAccepting}
 import akka.pattern.ask
-import akka.util.Timeout
+import akka.util.{ByteString, Timeout}
 import com.init6.Constants._
 import com.init6.channels._
 import com.init6.channels.utils.ChannelJoinValidator
@@ -80,6 +79,16 @@ class UserActor(connectionInfo: ConnectionInfo, var user: User, encoder: Encoder
   }
 
   override def loggedReceive: Receive = {
+    case SetCharacter(username, character) =>
+      user.character = Some(character)
+      val statstring =
+        "Sanctuary".getBytes() ++
+        Array(0x2C.toByte) ++
+        character.name.getBytes() ++
+        Array(0x2C.toByte) ++
+        character.statstring.toBytes
+      user.statstring = Some(ByteString(statstring))
+
     case JoinChannelFromConnection(channel, forceJoin) =>
       log.debug("matched JoinChannelFromConnection")
       joinChannel(channel, forceJoin)

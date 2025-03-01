@@ -27,7 +27,7 @@ case class Add(connectionInfo: ConnectionInfo, user: User, protocol: Protocol) e
 case class RemoteAdd(userActor: ActorRef, username: String) extends Command
 case class Rem(ipAddress: InetSocketAddress, userActor: ActorRef) extends Command with Remotable
 case class RemActors(userActors: Set[ActorRef]) extends Command
-case class Statstring() extends Command
+case class SetCharacter(username: String, character: com.init6.realm.Character) extends Command
 
 case class WhisperTo(user: User, username: String, message: String)  extends Command
 case object SubscribeAll
@@ -62,7 +62,6 @@ class UsersActor extends Init6RemotingActor with Init6LoggingActor {
   val remoteUsersMap = RemoteMultiMap[Address, ActorRef]()
 
   val ipLimitMap = mutable.HashMap[Int, Int]()
-
   val placeMap = mutable.SortedMap[Long, Int]()
 
   private def sendGetUsers(address: Address): Unit = {
@@ -260,6 +259,12 @@ class UsersActor extends Init6RemotingActor with Init6LoggingActor {
       } else {
         sender() ! UsersUserNotAdded()
       }
+
+    case SetCharacter(username, character) =>
+      val user = users.get(username)
+      user.foreach(u => {
+        u._2 ! SetCharacter(username, character)
+      })
 
     case Rem(ipAddress, userActor) =>
       rem(userActor)

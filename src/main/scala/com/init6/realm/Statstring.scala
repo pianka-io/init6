@@ -46,7 +46,7 @@ object Statstring {
     )
   }
 
-  def apply(bytes: ByteString): Unit = {
+  def apply(bytes: ByteString): Statstring = {
     Statstring(
       bytes(0),
       bytes(1),

@@ -34,18 +34,20 @@ case class Character(
   clazz: Int,
   flags: Int,
   ladder: Int,
-  statstring: ByteString
+  statstring: Statstring
 )
 
 object Character {
 
   def apply(character: DbRealmCharacter): Character = {
+    val ladder = if ((character.flags & Ladder) == Ladder) Season1 else NonLadder
+    val statstring = Statstring(ByteString(character.statstring))
     Character(
       character.name,
       character.`class`,
       character.flags,
-      if ((character.flags & Ladder) == Ladder) Season1 else NonLadder,
-      ByteString(character.statstring)
+      ladder,
+      statstring
     )
   }
 }

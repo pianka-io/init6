@@ -25,7 +25,7 @@ object McpCharList2 extends RealmPacket {
       packet = packet
         .putInt(Int.MaxValue)
         .putBytes(c.name)
-        .putBytes(c.statstring.toArray)
+        .putBytes(c.statstring.toBytes.toArray)
         .putByte(0)
     })
 
