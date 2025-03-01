@@ -15,16 +15,22 @@ object McpCharList2 extends RealmPacket {
 
   case class McpCharList2(number: Int)
 
-  def apply(): ByteString = {
+  def apply(characters: List[com.init6.realm.Character]): ByteString = {
+    var packet = ByteString.newBuilder
+      .putShort(8)
+      .putInt(characters.length)
+      .putShort(characters.length)
+
+    characters.foreach(c => {
+      packet = packet
+        .putInt(Int.MaxValue)
+        .putBytes(c.name)
+        .putBytes(c.statstring.toArray)
+        .putByte(0)
+    })
+
     build(
-      ByteString.newBuilder
-        .putShort(8)
-        .putInt(0)
-        .putShort(0)
-//        .putInt(Int.MaxValue)
-//        .putBytes("piankachu")
-//        .putBytes("VD2DSanctuary,piankachu")
-        .result()
+      packet.result()
     )
   }
 

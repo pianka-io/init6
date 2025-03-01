@@ -9,6 +9,5 @@ case class DbRealmCharacter(
   name: String,
   `class`: Int,
   flags: Int,
-  ladder: Int,
   statstring: Array[Byte],
 )

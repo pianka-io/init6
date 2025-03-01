@@ -1,14 +1,19 @@
 package com.init6.realm
 
+import akka.util.ByteString
+import com.init6.db.DbRealmCharacter
+import com.init6.realm.CharacterFlags.Ladder
+import com.init6.realm.LadderTypes.{NonLadder, Season1}
+
 
 object CharacterClass {
-  val Amazon = 0x01
-  val Sorceress = 0x02
-  val Necromancer = 0x03
-  val Paladin = 0x04
-  val Barbarian = 0x05
-  val Druid = 0x06
-  val Assassin = 0x07
+  val Amazon = 0x00
+  val Sorceress = 0x01
+  val Necromancer = 0x02
+  val Paladin = 0x03
+  val Barbarian = 0x04
+  val Druid = 0x05
+  val Assassin = 0x06
 }
 
 object CharacterFlags {
@@ -29,5 +34,18 @@ case class Character(
   clazz: Int,
   flags: Int,
   ladder: Int,
-  statstring: String
+  statstring: ByteString
 )
+
+object Character {
+
+  def apply(character: DbRealmCharacter): Character = {
+    Character(
+      character.name,
+      character.`class`,
+      character.flags,
+      if ((character.flags & Ladder) == Ladder) Season1 else NonLadder,
+      ByteString(character.statstring)
+    )
+  }
+}
