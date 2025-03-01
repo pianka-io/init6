@@ -10,7 +10,7 @@ import scala.util.Try
  */
 object SidAuthCheck extends BinaryPacket {
 
-  override val PACKET_ID = Packets.SID_AUTH_CHECK
+  override val PACKET_ID: Byte = Packets.SID_AUTH_CHECK
 
   val RESULT_SUCCESS = 0x00
   val RESULT_OLD_GAME_VERSION = 0x100

@@ -15,6 +15,7 @@ import scala.util.Try
 private[db] class UserCache(dbUsers: List[DbUser]) {
 
   private val cache = CaseInsensitiveHashMap[DbUser]()
+  private val idCache = mutable.HashMap[Long, DbUser]()
   private val inserted = mutable.HashSet[String]()
   private val updated = mutable.HashSet[String]()
 
@@ -35,6 +36,7 @@ private[db] class UserCache(dbUsers: List[DbUser]) {
   }
 
   cache ++= dbUsers.map(dbUser => dbUser.username -> dbUser)
+  idCache ++= dbUsers.map(dbUser => dbUser.id -> dbUser)
   executorService.scheduleWithFixedDelay(dbUpdateThread, updateInterval, updateInterval, TimeUnit.SECONDS)
 
   def close() = {
@@ -43,12 +45,15 @@ private[db] class UserCache(dbUsers: List[DbUser]) {
   }
 
   def get(username: String) = cache.get(username)
+  def get(userId: Long) = idCache.get(userId)
 
   def insert(username: String, password_hash: Array[Byte]) = {
     val now = System.currentTimeMillis
     val newUser = username.toLowerCase
-    cache += newUser -> DbUser(username = newUser, password_hash = password_hash,
+    val user = DbUser(username = newUser, password_hash = password_hash,
       created = now, last_logged_in = now)
+    cache += newUser -> user
+    idCache += user.id -> user
     inserted += username.toLowerCase
   }
 
@@ -56,6 +61,7 @@ private[db] class UserCache(dbUsers: List[DbUser]) {
     get(username).foreach(originalDbUser => {
       if (originalDbUser != dbUser) {
         cache += username -> dbUser
+        idCache += dbUser.id -> dbUser
         updated += username.toLowerCase
       }
     })

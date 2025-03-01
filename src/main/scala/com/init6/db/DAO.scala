@@ -1,6 +1,8 @@
 package com.init6.db
 
+import akka.util.ByteString
 import com.init6.Config
+import com.init6.realm.{Character, Statstring}
 import scalikejdbc._
 
 /**
@@ -40,6 +42,113 @@ object DAO {
   def close() = {
     userCache.close()
     session.close()
+  }
+
+  object DbRealmCookie extends SQLSyntaxSupport[DbRealmCookie] {
+    override val tableName = "realm_cookies"
+
+    def apply(rs: WrappedResultSet) = new DbRealmCookie(
+      rs.int(1),
+      rs.long(2)
+    )
+  }
+
+  private[db] def createRealmCookie(userId: Long) = {
+    DB localTx { implicit session =>
+      withSQL {
+        insertInto(DbRealmCookie)
+          .values(
+            None,
+            userId
+          )
+      }
+      .updateAndReturnGeneratedKey()
+      .apply()
+    }
+  }
+
+  private[db] def realmReadCookie(cookie: Int): Option[DbRealmCookie] = {
+    DB readOnly { implicit session =>
+      val c = DbRealmCookie.syntax("c")
+
+      withSQL {
+        select(c.result.id, c.result.userId)
+          .from(DbRealmCookie as c)
+          .where.eq(c.id, cookie)
+      }
+      .map(rs => com.init6.db.DbRealmCookie(rs.int(c.resultName.id), rs.long(c.resultName.userId)))
+      .single()
+      .apply()
+    }
+  }
+
+  object DbRealmCharacter extends SQLSyntaxSupport[DbRealmCharacter] {
+    override val tableName = "realm_characters"
+
+    def apply(rs: WrappedResultSet) = new DbRealmCharacter(
+      rs.int(1),
+      rs.long(2),
+      rs.string(3),
+      rs.int(4),
+      rs.int(5),
+      rs.bytes(6)
+    )
+  }
+
+  private[db] def createCharacter(userId: Long, name: String, clazz: Int, flags: Int, statstring: Statstring): Unit = {
+    DB localTx { implicit session =>
+      withSQL {
+        insertInto(DbRealmCharacter)
+          .values(
+            None,
+            userId,
+            name,
+            clazz,
+            flags,
+            statstring.toBytes.toArray
+          )
+      }
+      .updateAndReturnGeneratedKey()
+      .apply()
+    }
+  }
+
+  private[db] def deleteCharacter(userId: Long, name: String): Unit = {
+    val c = DbRealmCharacter.syntax("c")
+
+    DB localTx { implicit session =>
+      withSQL {
+        delete
+          .from(DbRealmCharacter as c)
+          .where.eq(c.userId, userId)
+          .and.eq(c.name, name)
+      }
+      .update()
+      .apply()
+    }
+  }
+
+  private[db] def readCharacters(userId: Long): List[Character] = {
+    val c = DbRealmCharacter.syntax("c")
+
+    withSQL {
+      select
+        .from(DbRealmCharacter as c)
+        .where.eq(c.userId, userId)
+    }
+    .map(rs => com.init6.db.DbRealmCharacter(
+      rs.int(c.resultName.id),
+      rs.long(c.resultName.userId),
+      rs.string(c.resultName.name),
+      rs.int(c.resultName.`class`),
+      rs.int(c.resultName.flags),
+      rs.bytes(c.resultName.statstring)
+    ))
+    .list
+    .apply()
+    .map(a =>
+      Character(a.name, a.`class`, a.flags, 0, Statstring(ByteString(a.statstring)))
+    )
   }
 
   object DbUser extends SQLSyntaxSupport[DbUser] {
@@ -84,6 +193,7 @@ object DAO {
   }
 
   def getUser(username: String) = userCache.get(username)
+  def getUser(userId: Long) = userCache.get(userId)
 
   private[db] def saveInserted(inserted: Iterable[DbUser]) = {
     if (inserted.nonEmpty) {
