@@ -2,7 +2,7 @@ package com.init6.connection.realm
 
 import akka.actor.{ActorRef, FSM, Props}
 import akka.util.ByteString
-import com.init6.coders.realm.packets.{McpCharCreate, McpCharList2, McpCharLogon, McpStartup, Packets}
+import com.init6.coders.realm.packets.{McpCharCreate, McpCharList2, McpCharLogon, McpGameCreate, McpGameList, McpMotd, McpStartup, Packets}
 import com.init6.coders.realm.packets.McpStartup.RESULT_SUCCESS
 import com.init6.connection.{ConnectionInfo, Init6KeepAliveActor, WriteOut}
 import com.init6.db.{RealmCreateCharacter, RealmCreateCharacterAck, RealmReadCharacter, RealmReadCharacterResponse, RealmReadCharacters, RealmReadCharactersResponse, RealmReadCookie, RealmReadCookieResponse}
@@ -45,11 +45,11 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
               goto(ExpectingRealmCookieReadFromDAO)
           }
         case _ =>
-          log.info(">> Received MCP packet {}", id)
+          log.info("[ExpectingLogon] Unhandled 0x{}", f"$id%X")
           stay()
       }
-    case x =>
-      log.info(">> Received {}", x.toString)
+    case a =>
+      log.info("[ExpectingRealmCookieReadFromDAO] Unhandled {}", a.getClass.getName)
       stay()
   }
 
@@ -60,6 +60,9 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
       this.username = username
       log.info("<< Sent MCP_STARTUP")
       goto(ExpectingLogon)
+    case a =>
+      log.info("[ExpectingRealmCookieReadFromDAO] Unhandled {}", a.getClass.getName)
+      stay()
   }
 
   when (ExpectingLogon) {
@@ -86,11 +89,11 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
             case _ => stop()
           }
         case _ =>
-          log.info(">> Received MCP packet {}", id)
+          log.info("[ExpectingLogon] Unhandled 0x{}", f"$id%X")
           stay()
       }
-    case x =>
-      log.info(">> Received {}", x.toString)
+    case a =>
+      log.info("[ExpectingRealmCookieReadFromDAO] Unhandled {}", a.getClass.getName)
       stay()
   }
 
@@ -100,6 +103,9 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
       log.info("<< Sent MCP_CHARLIST2")
       // TODO(pianka): update user's statstring
       goto(ExpectingLogon)
+    case a =>
+      log.info("[ExpectingRealmCharactersReadFromDAO] Unhandled {}", a.getClass.getName)
+      stay()
   }
 
   when (ExpectingRealmCharacterReadFromDAO) {
@@ -109,16 +115,49 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
       sendCharacter(character)
       log.info("<< Sent MCP_CHARCREATE")
       goto(ExpectingGame)
+    case a =>
+      log.info("[ExpectingRealmCharacterReadFromDAO] Unhandled {}", a.getClass.getName)
+      stay()
   }
 
   when (ExpectingRealmCharactersCreateFromDAO) {
     case Event(RealmCreateCharacterAck(result, character), _) =>
       // TODO(pianka): honor the result
       send(McpCharCreate(RESULT_SUCCESS))
-      log.info("<< Sent MCP_CHARCREATE")
       sendCharacter(character)
       log.info("<< Sent MCP_CHARCREATE")
-      goto(ExpectingLogon)
+      goto(ExpectingGame)
+    case a =>
+      log.info("[ExpectingRealmCharactersCreateFromDAO] Unhandled {}", a.getClass.getName)
+      stay()
+  }
+
+  when (ExpectingGame) {
+    case Event(RealmPacket(id, data), _) =>
+      id match {
+        case Packets.MCP_GAMELIST =>
+          data match {
+            case McpGameList(packet) =>
+              send(McpGameList(packet.requestId, 0, None))
+          }
+        case Packets.MCP_GAMECREATE =>
+          data match {
+            case McpGameCreate(packet) =>
+              send(McpGameCreate(packet.requestId, 0, McpGameCreate.SERVERS_DOWN))
+          }
+        case Packets.MCP_CHARLIST2 =>
+          log.info(">> Received MCP_CHARLIST2")
+          daoActor ! RealmReadCharacters(userId)
+          goto(ExpectingRealmCharactersReadFromDAO)
+        case Packets.MCP_MOTD =>
+          send(McpMotd("Welcome to Warnet 2025: Sanctuary!"))
+        case _ =>
+          log.info("[ExpectingGame] Unhandled 0x{}", f"$id%X")
+      }
+      stay()
+    case a =>
+      log.info("[ExpectingRealmCookieReadFromDAO] Unhandled {}", a.getClass.getName)
+      stay()
   }
 
   def send(data: ByteString): Unit = {
