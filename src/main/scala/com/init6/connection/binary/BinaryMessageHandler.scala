@@ -144,6 +144,14 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
           case SidGetIconData(packet) =>
             send(SidGetIconData())
         }
+      case SID_ENTERCHAT =>
+        binaryPacket.packet match {
+          case SidEnterChat(packet) =>
+            send(SidEnterChat(username, oldUsername, productId))
+            send(BinaryChatEncoder(UserInfoArray(Config().motd)).get)
+            keepAlive(actor, () => sendPing())
+            goto(LoggedIn)
+        }
 //      case SID_LEAVECHAT =>
 //        binaryPacket.packet match {
 //          case SidLeaveChat(packet) =>

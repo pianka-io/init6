@@ -48,6 +48,8 @@ case class RealmReadCookie(cookie: Int) extends Command
 case class RealmReadCookieResponse(userId: Long, username: String) extends Command
 case class RealmCreateCharacter(userId: Long, name: String, clazz: Int, flags: Int) extends Command
 case class RealmCreateCharacterAck(success: Boolean, character: com.init6.realm.Character) extends Command
+case class RealmDeleteCharacter(userId: Long, name: String) extends Command
+case class RealmDeleteCharacterAck(success: Boolean) extends Command
 case class RealmReadCharacters(userId: Long) extends Command
 case class RealmReadCharactersResponse(characters: List[com.init6.realm.Character]) extends Command
 case class RealmReadCharacter(userId: Long, name: String) extends Command
@@ -94,10 +96,16 @@ class DAOActor extends Init6RemotingActor {
 
     case RealmCreateCharacter(userId, name, clazz, flags) =>
       val statstring = Statstring(clazz.toByte, flags.toByte)
+      log.info("[RealmCreateCharacter] Statstring {}", statstring.toBytes)
       val character = com.init6.realm.Character(name, clazz, flags, statstring.Ladder, statstring)
       DAO.createCharacter(userId, name, clazz, flags, statstring)
       // TODO(pianka): handle failures
       sender() ! RealmCreateCharacterAck(success = true, character)
+
+    case RealmDeleteCharacter(userId, name) =>
+      DAO.deleteCharacter(userId, name)
+      // TODO(pianka): handle failures
+      sender() ! RealmDeleteCharacterAck(success = true)
 
     case CreateAccount(username, passwordHash) =>
       DAO.createUser(username, passwordHash)

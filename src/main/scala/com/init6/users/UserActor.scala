@@ -81,12 +81,14 @@ class UserActor(connectionInfo: ConnectionInfo, var user: User, encoder: Encoder
   override def loggedReceive: Receive = {
     case SetCharacter(username, character) =>
       user.character = Some(character)
-      val statstring =
+      val statstring = {
+        user.client.getBytes() ++
         "Sanctuary".getBytes() ++
         Array(0x2C.toByte) ++
         character.name.getBytes() ++
         Array(0x2C.toByte) ++
         character.statstring.toBytes
+      }
       user.statstring = Some(ByteString(statstring))
 
     case JoinChannelFromConnection(channel, forceJoin) =>

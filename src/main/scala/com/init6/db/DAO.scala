@@ -113,6 +113,21 @@ object DAO {
     }
   }
 
+  private[db] def deleteCharacter(userId: Long, name: String): Unit = {
+    val c = DbRealmCharacter.syntax("c")
+
+    DB localTx { implicit session =>
+      withSQL {
+        delete
+          .from(DbRealmCharacter as c)
+          .where.eq(c.userId, userId)
+          .and.eq(c.name, name)
+      }
+      .update()
+      .apply()
+    }
+  }
+
   private[db] def readCharacters(userId: Long): List[Character] = {
     val c = DbRealmCharacter.syntax("c")
 

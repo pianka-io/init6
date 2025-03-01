@@ -10,7 +10,7 @@ object SidChatEvent extends BinaryPacket {
 
   override val PACKET_ID = Packets.SID_CHATEVENT
 
-  def apply(eventId: Int, flags: Int, ping: Int, username: String, text: String = "") = {
+  def apply(eventId: Int, flags: Int, ping: Int, username: String, text: String = "", bytes: Option[ByteString] = None) = {
     build(
       ByteString.newBuilder
         .putInt(eventId)
@@ -20,7 +20,7 @@ object SidChatEvent extends BinaryPacket {
         .putInt(0)
         .putInt(0)
         .putBytes(username)
-        .putBytes(text)
+        .putBytes(bytes.map(_.toArray).getOrElse(text))
         .result()
     )
   }
