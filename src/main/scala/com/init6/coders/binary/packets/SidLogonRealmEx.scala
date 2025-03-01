@@ -1,6 +1,7 @@
 package com.init6.coders.binary.packets
 
 import akka.util.ByteString
+import com.init6.Config
 import com.init6.coders.binary.{BinaryPacket, DeBuffer}
 
 import java.net.InetAddress
@@ -33,7 +34,7 @@ object SidLogonRealmEx extends BinaryPacket {
         .putInt(0x00000000) // status
         .putInt(0x33316163) // mcp chunk 1.1
         .putInt(0x65303830) // mcp chunk 1.2
-        .putInt(aton("127.0.0.1")) // ip
+        .putInt(aton(Config().Realm.ipAddress)) // ip
         .putInt(htons(4000)) // port
         .putInt(0x66663162) // mcp chunk 2
         .putInt(0x34613566) // magic

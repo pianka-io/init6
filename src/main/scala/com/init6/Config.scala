@@ -118,6 +118,12 @@ sealed class Config(filePath: String) {
     val batchUpdateInterval = p.getInt("batch-update-interval")
   }
 
+  object Realm {
+    private val p = root.getConfig("realm")
+
+    val ipAddress = p.getString("ip_address")
+  }
+
   object AntiFlood {
 
     private val p = root.getConfig("anti-flood")
