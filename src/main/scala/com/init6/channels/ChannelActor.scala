@@ -264,7 +264,7 @@ trait ChannelActor extends Init6RemotingActor {
     case c@ AddUser(actor, user, _) => add(actor, user)
     case RemUser(actor) => rem(actor)
     case CheckSize => sender() ! ChannelSize(self, name, users.size)
-    case ChannelsCommand => sender() ! ChannelInfo(name, users.size, topicExchange.topic, creationTime)
+    case ChannelsCommand => sender() ! ChannelInfo(name, users.size, topicExchange.topic, creationTime, users.values.filter(Flags.isOp).map(_.name).toArray)
     case c@ WhoCommandToChannel(actor, user, opsOnly) => whoCommand(actor, user, opsOnly)
     case UpdatePing(ping) =>
       val userActor = sender()

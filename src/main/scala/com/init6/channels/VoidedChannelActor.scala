@@ -1,7 +1,7 @@
 package com.init6.channels
 
 import com.init6.Constants._
-import com.init6.coders.commands.{ChannelInfo, ChannelsCommand, EmoteCommand, WhoCommandToChannel}
+import com.init6.coders.commands.{ChannelInfo, ChannelInfoVoid, ChannelsCommand, EmoteCommand, WhoCommandToChannel}
 import com.init6.users.{GetUsers, UpdatePing}
 
 /**
@@ -19,7 +19,7 @@ sealed class VoidedChannelActor(override val name: String)
   override def receiveEvent = ({
     case WhoCommandToChannel(_, _, _) | UpdatePing(_) => // No-op
     case GetUsers => sender() ! UserInfo(NO_CHAT_PRIVILEGES)
-    case ChannelsCommand => sender() ! ChannelInfo(name, 0, topicExchange.topic, creationTime)
+    case ChannelsCommand => sender() ! ChannelInfoVoid(name, users.size, creationTime)
     case EmoteCommand(_, message) =>
       if (isLocal()) {
         sender() ! UserEmote(users(sender()), message)

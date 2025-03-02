@@ -44,9 +44,10 @@ object Constants {
   val CANNOT_BAN_OPERATOR = "You can't ban a channel operator."
   val CANNOT_KICK_OPERATOR = "You can't kick a channel operator."
   val CHANNEL_FULL = "Channel is full."
-  val CHANNEL_INFO = (name: String, size: Int, topic: String, creationTime: Long) =>
-    String.format("%1$-15s| %2$-5s| %3$-10s| %4$s", name, size.toString, formatNanos(creationTime), topic)
-
+  val CHANNEL_INFO = (name: String, size: Int, topic: String, creationTime: Long, operator: Array[String]) =>
+    String.format("%1$-15s| %2$-5s| %3$-10s| %4$-13s| %5$s", name, size.toString, formatNanos(creationTime), operator.mkString(" & "), topic)
+  val CHANNEL_INFO_VOID = (name: String, size: Int, creationTime: Long) =>
+    String.format("%1$-15s| %2$-5s|", name, size.toString)
   val CHANNEL_LIST = (size: Int) => s"Listing $size ${addS(size, "channel")}:"
   val CHANNEL_LIST_EMPTY = "There are no visible channels."
   val CHANNEL_NOT_EXIST = Array(
