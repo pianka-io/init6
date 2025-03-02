@@ -2,6 +2,7 @@ package com.init6.coders.d2cs.packets
 
 import akka.util.ByteString
 import com.init6.coders.binary.DeBuffer
+import com.init6.coders.d2cs.D2CSPacket
 import com.init6.coders.realm.RealmPacket
 
 import scala.util.Try
@@ -9,7 +10,7 @@ import scala.util.Try
 /**
  * Created by pianka on 03/02/25.
  */
-object D2CSCharLoginRequest extends RealmPacket {
+object D2CSCharLoginRequest extends D2CSPacket {
 
   override val PACKET_ID: Byte = Packets.D2CS_CHARLOGINREQ
 
@@ -22,8 +23,9 @@ object D2CSCharLoginRequest extends RealmPacket {
     characterPortrait: ByteString, // statstring
   )
 
-  def apply(result: Int): ByteString = {
+  def apply(seqno: Int, result: Int): ByteString = {
     build(
+      seqno,
       ByteString.newBuilder
         .putInt(result)
         .result()

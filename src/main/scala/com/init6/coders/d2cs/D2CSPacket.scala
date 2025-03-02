@@ -8,11 +8,11 @@ import scala.language.implicitConversions
 /**
  * Created by pianka on 02/14/25.
  */
-trait RealmPacket {
+trait D2CSPacket {
 
   implicit val byteOrder: ByteOrder = ByteOrder.LITTLE_ENDIAN
 
-  val PACKET_HEADER_LENGTH: Short = 3
+  val PACKET_HEADER_LENGTH: Short = 8
 
   val PACKET_ID: Byte
 
@@ -23,10 +23,11 @@ trait RealmPacket {
       .result()
   }
 
-  def build(data: ByteString): ByteString = {
+  def build(seqno: Int, data: ByteString): ByteString = {
     ByteString.newBuilder
       .putShort(data.length + PACKET_HEADER_LENGTH)
-      .putByte(PACKET_ID)
+      .putShort(PACKET_ID)
+      .putInt(seqno)
       .append(data)
       .result()
   }

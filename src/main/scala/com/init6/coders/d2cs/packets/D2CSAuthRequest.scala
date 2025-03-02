@@ -2,14 +2,14 @@ package com.init6.coders.d2cs.packets
 
 import akka.util.ByteString
 import com.init6.coders.binary.DeBuffer
-import com.init6.coders.realm.RealmPacket
+import com.init6.coders.d2cs.D2CSPacket
 
 import scala.util.Try
 
 /**
  * Created by pianka on 03/02/25.
  */
-object D2CSAuthRequest extends RealmPacket {
+object D2CSAuthRequest extends D2CSPacket {
 
   override val PACKET_ID: Byte = Packets.D2CS_AUTHREQ
 
@@ -17,6 +17,7 @@ object D2CSAuthRequest extends RealmPacket {
 
   def apply(result: Int): ByteString = {
     build(
+      0,
       ByteString.newBuilder
         .putInt(result)
         .result()

@@ -2,6 +2,7 @@ package com.init6.coders.d2cs.packets
 
 import akka.util.ByteString
 import com.init6.coders.binary.DeBuffer
+import com.init6.coders.d2cs.D2CSPacket
 import com.init6.coders.realm.RealmPacket
 
 import scala.util.Try
@@ -9,7 +10,7 @@ import scala.util.Try
 /**
  * Created by pianka on 03/02/25.
  */
-object D2CSGameInfoRequest extends RealmPacket {
+object D2CSGameInfoRequest extends D2CSPacket {
 
   override val PACKET_ID: Byte = Packets.D2CS_GAMEINFOREQ
 
@@ -21,10 +22,12 @@ object D2CSGameInfoRequest extends RealmPacket {
     gameName: String,
   )
 
-  def apply(result: Int): ByteString = {
+  def apply(gameName: String): ByteString = {
     build(
+      0,
       ByteString.newBuilder
-        .putInt(result)
+//        .putByte(difficulty)
+        .putBytes(gameName)
         .result()
     )
   }

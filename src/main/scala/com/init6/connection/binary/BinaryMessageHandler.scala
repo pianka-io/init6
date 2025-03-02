@@ -13,6 +13,7 @@ import com.init6.coders.binary.packets.Packets._
 import com.init6.coders.binary.packets._
 import com.init6.coders.commands.{FriendsList, PongCommand}
 import com.init6.connection._
+import com.init6.connection.d2cs.{D2CSGameRequest, D2CSGameResponse, D2CSMessageHandler}
 import com.init6.db.{CreateAccount, DAO, DAOCreatedAck, RealmCreateCookie, RealmCreateCookieAck, UpdateAccountPassword}
 import com.init6.users._
 import com.init6.utils.LimitedAction
@@ -86,6 +87,18 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
           case SidLogonRealmEx(packet) =>
             daoActor ! RealmCreateCookie(userId)
             return goto(ExpectingRealmCreateCookieFromDAO)
+        }
+      case SID_STARTADVEX3 =>
+        D2CSMessageHandler.actor match {
+          case Some(actor) =>
+            log.info("SID_STARTADVEX3 Some")
+            binaryPacket.packet match {
+              case SidStartAdvEx3(packet) =>
+                actor ! D2CSGameRequest(0, packet.name)
+            }
+          case None =>
+            log.info("SID_STARTADVEX3 None")
+            send(SidStartAdvEx3(SidStartAdvEx3.RESULT_UNAVAILABLE))
         }
       /* Sanctuary */
       case SID_NULL =>
@@ -166,7 +179,7 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
 
   when(ExpectingRealmCreateCookieFromDAO) {
     case Event(RealmCreateCookieAck(cookie), _) =>
-      send(SidLogonRealmEx(cookie))
+      send(SidLogonRealmEx(cookie, username))
       goto(ExpectingSidEnterChat)
   }
 
@@ -511,6 +524,11 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
   }
 
   when(LoggedIn) {
+    case Event(D2CSGameResponse(successful), _) =>
+      log.info(">> Received D2CSGameResponse")
+      send(SidStartAdvEx3(if (successful) 0 else 1))
+      log.info(">> Sent SID_STARTADVEX3")
+      stay()
     case Event(BinaryPacket(packetId, data), actor) =>
       log.debug(">> {} Received: {}", connectionInfo.actor, f"$packetId%X")
       keptAlive = 0

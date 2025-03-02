@@ -37,7 +37,7 @@ class ProtocolHandler(rawConnectionInfo: ConnectionInfo) extends Init6Actor with
   val BNFTP: Byte = 0x02
   val TELNET: Byte = 0x03
   val TELNET_2: Byte = 0x04
-  val D2CS: Byte = 0x0C
+  val D2CS: Byte = 0x65
   val INIT6_CHAT: Byte = 'C'.toByte
   val INIT6_CHAT_1: Byte = '1'.toByte
 
@@ -78,6 +78,7 @@ class ProtocolHandler(rawConnectionInfo: ConnectionInfo) extends Init6Actor with
           Some(ConnectionProtocolData(new ChatReceiver, context.actorOf(Chat1Handler(
             rawConnectionInfo.copy(actor = self, firstPacketReceivedTime = packetReceivedTime, protocol = Chat1Protocol))), data.drop(2)))
         } else if (data.head == D2CS) {
+          log.info("D2CS CONNECTION")
           Some(ConnectionProtocolData(new D2CSReceiver, context.actorOf(D2CSMessageHandler(rawConnectionInfo.copy(actor = self, protocol = D2CSProtocol))), data.drop(1)))
         } else {
           None

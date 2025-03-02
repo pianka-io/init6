@@ -27,28 +27,28 @@ object SidLogonRealmEx extends BinaryPacket {
    * (UINT32)[12] MCP Chunk 2
    * (STRING)     Battle.net unique name (* as of D2 1.14d, this is empty)
    */
-  def apply(cookie: Int): ByteString = {
+  def apply(cookie: Int, username: String): ByteString = {
     build(
       ByteString.newBuilder
         .putInt(cookie) // cookie
         .putInt(0x00000000) // status
-        .putInt(0x33316163) // mcp chunk 1.1
-        .putInt(0x65303830) // mcp chunk 1.2
+        .putInt(0x00000000) // mcp chunk 1.1
+        .putInt(0x00000001) // mcp chunk 1.2
         .putInt(aton(Config().Realm.ipAddress)) // ip
-        .putInt(htons(4000)) // port
-        .putInt(0x66663162) // mcp chunk 2
-        .putInt(0x34613566) // magic
-        .putInt(0x64326639)
-        .putInt(0x63336330)
-        .putInt(0x38326135)
-        .putInt(0x39663937)
-        .putInt(0x62653134)
-        .putInt(0x36313861)
-        .putInt(0x36353032)
-        .putInt(0x31353066)
+        .putInt(htons(6113)) // port
+        .putInt(0x67C48058) // mcp chunk 2
+        .putInt(0x00000000) // magic
+        .putInt(0x00000000)
+        .putInt(0x44324456)
         .putInt(0x00000000)
         .putInt(0x00000000)
-        .putByte(0x00) // empty string
+        .putInt(0x00000000)
+        .putInt(0x483EE33F)
+        .putInt(0x4AE508D5)
+        .putInt(0x21886A56)
+        .putInt(0x5F15CE41)
+        .putInt(0x87A1586D)
+        .putBytes(username)
         .result()
     )
   }
