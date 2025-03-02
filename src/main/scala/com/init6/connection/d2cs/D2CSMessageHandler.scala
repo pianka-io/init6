@@ -4,10 +4,7 @@ import akka.actor.{ActorRef, FSM, Props}
 import akka.util.ByteString
 import com.init6.coders.d2cs.packets.{D2CSAccountLoginRequest, D2CSAuthReply, D2CSAuthRequest, D2CSCharLoginRequest, D2CSGameInfoRequest, Packets}
 import com.init6.connection.{ConnectionInfo, Init6KeepAliveActor, WriteOut}
-
 import scala.collection.mutable
-
-
 
 sealed trait D2CSState
 case object Always extends D2CSState
@@ -24,12 +21,11 @@ object D2CSMessageHandler {
 class D2CSMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliveActor with FSM[D2CSState, ActorRef] {
 
   val selfSessionnum: Int = D2CSMessageHandler.nextSessionNum
+  D2CSMessageHandler.nextSessionNum += 1
+  send(D2CSAuthRequest(selfSessionnum))
 
   startWith(Always, ActorRef.noSender)
   context.watch(connectionInfo.actor)
-
-  send(D2CSAuthRequest(selfSessionnum))
-  D2CSMessageHandler.nextSessionNum += 1
 
   when (Always) {
     case Event(D2CSPacket(id, seqno, data), _) =>
