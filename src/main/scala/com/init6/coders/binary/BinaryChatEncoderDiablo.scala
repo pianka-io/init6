@@ -69,7 +69,7 @@ object BinaryChatEncoderDiablo extends Encoder {
 
   def massageName(user: User): String = {
     if (user.client.endsWith("2D")) {
-      user.character.map(_.name).getOrElse("") + "*" + user.name
+      user.character.getOrElse("") + "*" + user.name
     } else {
       "*" + user.name
     }

@@ -3,8 +3,9 @@ package com.init6.connection.d2cs
 import akka.actor.{ActorRef, FSM, Props}
 import akka.util.ByteString
 import com.init6.coders.d2cs.packets.{D2CSAccountLoginRequest, D2CSAuthReply, D2CSAuthRequest, D2CSCharLoginRequest, D2CSGameInfoRequest, Packets}
-import com.init6.connection.d2cs.D2CSMessageHandler.gameCache
+import com.init6.connection.d2cs.D2CSMessageHandler.{gameCache, userCache}
 import com.init6.connection.{ConnectionInfo, Init6KeepAliveActor, WriteOut}
+import com.init6.users.SetCharacter
 
 import scala.collection.mutable
 
@@ -20,6 +21,7 @@ case class D2CSPacket(packetId: Byte, seqno: Int, packet: ByteString)
 object D2CSMessageHandler {
   var actor: Option[ActorRef] = None
   private var nextSessionNum = 1
+  private val userCache = mutable.HashMap[Int, String]()
   private val gameCache = mutable.HashMap[String, ActorRef]()
 
   def apply(connectionInfo: ConnectionInfo): Props = Props(classOf[D2CSMessageHandler], connectionInfo)
@@ -57,6 +59,7 @@ class D2CSMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliveA
           data match {
             case D2CSAccountLoginRequest(packet) =>
               log.info(">> Received D2CS_ACCOUNTLOGINREQ")
+              userCache += packet.sessionnum -> packet.accountName
               send(D2CSAccountLoginRequest(seqno, D2CSAuthReply.RESULT_SUCCESS))
               log.info(">> Sent D2CS_ACCOUNTLOGINREQ")
           }
@@ -64,6 +67,9 @@ class D2CSMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliveA
           data match {
             case D2CSCharLoginRequest(packet) =>
               log.info(">> Received D2CS_CHARLOGINREQ")
+              userCache.get(packet.sessionnum).foreach(u => {
+                usersActor ! SetCharacter(u, packet.characterName, packet.characterPortrait)
+              })
               send(D2CSCharLoginRequest(seqno, D2CSAuthReply.RESULT_SUCCESS))
               log.info(">> Sent D2CS_CHARLOGINREQ")
           }

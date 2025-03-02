@@ -48,7 +48,7 @@ case class User(
   client: String = "CHAT",
 
   // Changeable
-  var character: Option[com.init6.realm.Character] = None,
+  var character: Option[String] = None,
   var statstring: Option[ByteString] = None,
   inChannel: String = "",
   channelTimestamp: Long = 0

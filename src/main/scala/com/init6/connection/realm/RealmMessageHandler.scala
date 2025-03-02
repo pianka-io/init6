@@ -191,6 +191,6 @@ class RealmMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAlive
   }
 
   private def sendCharacter(character: com.init6.realm.Character): Unit = {
-    usersActor ! SetCharacter(username, character)
+    usersActor ! SetCharacter(username, character.name, character.statstring.toBytes)
   }
 }
