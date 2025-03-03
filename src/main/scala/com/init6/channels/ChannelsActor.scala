@@ -154,24 +154,34 @@ class ChannelsActor extends Init6RemotingActor {
           case (_, actor) => actor ? ChannelsCommand
         }
         .collectResults {
-          case channelInfo @ ChannelInfo(name, size, topic, creationTime) if size > 0 => Some(channelInfo)
-          case _ => None
+          case channelInfo @ ChannelInfo(name, size, topic, creationTime, operator) if size > 0 =>
+            Some(channelInfo) // Ensure it returns a valid result
+          case channelInfoVoid @ ChannelInfoVoid(name, size, creationTime) =>
+            Some(channelInfoVoid) // Handle ChannelInfoVoid
+          case _ => None // Catch-all case for anything else
         }
         .foreach(responses => {
           if (responses.nonEmpty) {
             val sortedResponses = responses.sortWith((c1, c2) => {
-              if (c1.creationTime == 0) {
-                false
+              if (c1.name.equalsIgnoreCase("the void")) {
+                false // c1 is "the void", so it should come last
+              } else if (c2.name.equalsIgnoreCase("the void")) {
+                true // c2 is "the void", so it should come last
+              } else if (c1.creationTime == 0 && c2.creationTime == 0) {
+                false // If both have creationTime 0, maintain order
+              } else if (c1.creationTime == 0) {
+                false // If c1 has creationTime 0, it comes after c2
               } else if (c2.creationTime == 0) {
-                c1.creationTime > 0
+                true // If c2 has creationTime 0, c1 comes before c2
               } else {
-                c2.creationTime > c1.creationTime
+                c2.creationTime > c1.creationTime // Sort by creationTime in descending order
               }
             })
 
             replyActor ! UserInfo(CHANNEL_LIST(sortedResponses.size))
             sortedResponses.foreach {
-              case ChannelInfo(name, size, topic, creationTime) => replyActor ! UserInfo(CHANNEL_INFO(name, size, topic, creationTime))
+              case ChannelInfo(name, size, topic, creationTime, operator) => replyActor ! UserInfo(CHANNEL_INFO(name, size, topic, creationTime, operator))
+              case ChannelInfoVoid(name, size, creationTime) => replyActor ! UserInfo(CHANNEL_INFO_VOID(name, size, creationTime))
             }
           } else {
             replyActor ! UserInfo(CHANNEL_LIST_EMPTY)
