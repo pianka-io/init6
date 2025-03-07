@@ -13,10 +13,11 @@ import com.init6.coders.binary.packets.Packets._
 import com.init6.coders.binary.packets._
 import com.init6.coders.commands.{FriendsList, PongCommand}
 import com.init6.connection._
+import com.init6.connection.d2cs.D2CSMessageHandler.userCache
 import com.init6.connection.d2cs.{D2CSGameRequest, D2CSGameResponse, D2CSMessageHandler}
 import com.init6.db.{CreateAccount, DAO, DAOCreatedAck, RealmCreateCookie, RealmCreateCookieAck, UpdateAccountPassword}
 import com.init6.users._
-import com.init6.utils.LimitedAction
+import com.init6.utils.{HttpUtils, LimitedAction}
 
 import scala.util.Random
 
@@ -94,11 +95,19 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
             log.info("SID_STARTADVEX3 Some")
             binaryPacket.packet match {
               case SidStartAdvEx3(packet) =>
+//                val message = s"**${username}** created game **${packet.name}**."
+//                HttpUtils.postMessage("http://localhost:8080/d2_activity", message)
                 actor ! D2CSGameRequest(0, packet.name)
             }
           case None =>
             log.info("SID_STARTADVEX3 None")
             send(SidStartAdvEx3(SidStartAdvEx3.RESULT_UNAVAILABLE))
+        }
+      case SID_NOTIFYJOIN =>
+        binaryPacket.packet match {
+          case SidNotifyJoin(packet) =>
+            val message = s"**${username}** joined game **${packet.name}**."
+            HttpUtils.postMessage("http://localhost:8080/d2_activity", message)
         }
       /* Sanctuary */
       case SID_NULL =>

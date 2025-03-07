@@ -6,6 +6,7 @@ import com.init6.coders.d2cs.packets.{D2CSAccountLoginRequest, D2CSAuthReply, D2
 import com.init6.connection.d2cs.D2CSMessageHandler.{gameCache, userCache}
 import com.init6.connection.{ConnectionInfo, Init6KeepAliveActor, WriteOut}
 import com.init6.users.SetCharacter
+import com.init6.utils.HttpUtils
 
 import scala.collection.mutable
 
@@ -61,6 +62,8 @@ class D2CSMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliveA
               log.info(">> Received D2CS_ACCOUNTLOGINREQ")
               userCache += packet.sessionnum -> packet.accountName
               send(D2CSAccountLoginRequest(seqno, D2CSAuthReply.RESULT_SUCCESS))
+              val message = s"**${packet.accountName}** signed into **Sanctuary**."
+              HttpUtils.postMessage("http://localhost:8080/d2_activity", message)
               log.info(">> Sent D2CS_ACCOUNTLOGINREQ")
           }
         case Packets.D2CS_CHARLOGINREQ =>
@@ -70,6 +73,8 @@ class D2CSMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliveA
               userCache.get(packet.sessionnum).foreach(u => {
                 usersActor ! SetCharacter(u, packet.characterName, packet.characterPortrait)
               })
+              val message = s"**${userCache.get(packet.sessionnum)}** logged onto **${packet.characterName}**."
+              HttpUtils.postMessage("http://localhost:8080/d2_activity", message)
               send(D2CSCharLoginRequest(seqno, D2CSAuthReply.RESULT_SUCCESS))
               log.info(">> Sent D2CS_CHARLOGINREQ")
           }

@@ -136,6 +136,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.softwaremill.sttp.client3</groupId>
+            <artifactId>core_2.12</artifactId>
+            <version>3.9.2</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.typesafe</groupId>
             <artifactId>config</artifactId>
             <version>1.3.0</version>
