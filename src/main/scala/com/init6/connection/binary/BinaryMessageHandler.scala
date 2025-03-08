@@ -96,7 +96,7 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
             binaryPacket.packet match {
               case SidStartAdvEx3(packet) =>
 //                val message = s"**${username}** created game **${packet.name}**."
-//                HttpUtils.postMessage("http://localhost:8889/d2_activity", message)
+//                HttpUtils.postMessage("http://127.0.0.1:8889/d2_activity", message)
                 actor ! D2CSGameRequest(0, packet.name)
             }
           case None =>
@@ -107,7 +107,7 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
         binaryPacket.packet match {
           case SidNotifyJoin(packet) =>
             val message = s"**${username}** joined game **${packet.name}**."
-            HttpUtils.postMessage("http://localhost:8889/d2_activity", message)
+            HttpUtils.postMessage("http://127.0.0.1:8080/d2_activity", message)
         }
       /* Sanctuary */
       case SID_NULL =>

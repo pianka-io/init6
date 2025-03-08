@@ -63,7 +63,7 @@ class D2CSMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliveA
               userCache += packet.sessionnum -> packet.accountName
               send(D2CSAccountLoginRequest(seqno, D2CSAuthReply.RESULT_SUCCESS))
               val message = s"**${packet.accountName}** signed into **Sanctuary**."
-              HttpUtils.postMessage("http://localhost:8889/d2_activity", message)
+              HttpUtils.postMessage("http://127.0.0.1:8080/d2_activity", message)
               log.info(">> Sent D2CS_ACCOUNTLOGINREQ")
           }
         case Packets.D2CS_CHARLOGINREQ =>
@@ -74,7 +74,7 @@ class D2CSMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliveA
                 usersActor ! SetCharacter(u, packet.characterName, packet.characterPortrait)
               })
               val message = s"**${userCache.get(packet.sessionnum)}** logged onto **${packet.characterName}**."
-              HttpUtils.postMessage("http://localhost:8889/d2_activity", message)
+              HttpUtils.postMessage("http://127.0.0.1:8080/d2_activity", message)
               send(D2CSCharLoginRequest(seqno, D2CSAuthReply.RESULT_SUCCESS))
               log.info(">> Sent D2CS_CHARLOGINREQ")
           }
