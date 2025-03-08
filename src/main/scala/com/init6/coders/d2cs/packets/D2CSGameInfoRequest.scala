@@ -17,16 +17,18 @@ object D2CSGameInfoRequest extends D2CSPacket {
   val RESULT_SUCCESS = 0x00
   val RESULT_FAILURE = 0x01
 
+  var seqno = 0
+
   case class D2CSGameInfoRequest(
     difficulty: Byte,
     gameName: String,
   )
 
   def apply(gameName: String): ByteString = {
+    seqno += 1
     build(
-      0,
+      seqno,
       ByteString.newBuilder
-//        .putByte(difficulty)
         .putBytes(gameName)
         .result()
     )
