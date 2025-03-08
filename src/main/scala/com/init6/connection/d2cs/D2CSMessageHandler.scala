@@ -63,7 +63,7 @@ class D2CSMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliveA
               log.info(">> Received D2CS_ACCOUNTLOGINREQ")
               if (!userCache.contains(packet.sessionnum)) {
                 val message = s"**${packet.accountName}** signed into **Sanctuary**."
-                HttpUtils.postMessage("http://127.0.0.1:8080/d2_activity", message)
+                HttpUtils.postMessage("http://127.0.0.1:8889/d2_activity", message)
               }
               userCache += packet.sessionnum -> packet.accountName
               send(D2CSAccountLoginRequest(seqno, D2CSAuthReply.RESULT_SUCCESS))
@@ -80,12 +80,12 @@ class D2CSMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliveA
                 case Some(character) =>
                   if (!character.equals(packet.characterName)) {
                     val message = s"**${userCache.getOrElse(packet.sessionnum, "UNKNOWN")}** logged onto **${packet.characterName}**."
-                    HttpUtils.postMessage("http://127.0.0.1:8080/d2_activity", message)
+                    HttpUtils.postMessage("http://127.0.0.1:8889/d2_activity", message)
                     D2CSMessageHandler.characterCache += packet.sessionnum -> packet.characterName
                   }
                 case None =>
                   val message = s"**${userCache.getOrElse(packet.sessionnum, "UNKNOWN")}** logged onto **${packet.characterName}**."
-                  HttpUtils.postMessage("http://127.0.0.1:8080/d2_activity", message)
+                  HttpUtils.postMessage("http://127.0.0.1:8889/d2_activity", message)
                   D2CSMessageHandler.characterCache += packet.sessionnum -> packet.characterName
               }
               send(D2CSCharLoginRequest(seqno, D2CSAuthReply.RESULT_SUCCESS))
