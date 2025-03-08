@@ -1,21 +1,20 @@
 package com.init6.utils
 
-import sttp.client3.quick.backend
-import sttp.client3.{UriContext, basicRequest}
+import okhttp3._
 
 object HttpUtils {
+  private val client = new OkHttpClient()
 
   def postMessage(url: String, message: String): String = {
-    val request = basicRequest
-      .post(uri"$url")
-      .body(s"""{"message": "$message"}""")
-      .header("Content-Type", "application/json")
+    val requestBody = RequestBody.create(MediaType.get("application/json"), s"""{"message": "$message"}""")
 
-    val response = request.send(backend)
+    val request = new Request.Builder()
+      .url(url)
+      .post(requestBody)
+      .build()
 
-    response.body match {
-      case Right(body) => body
-      case Left(error) => s"Request failed: $error"
-    }
+    val response = client.newCall(request).execute()
+
+    response.body().string()
   }
 }
