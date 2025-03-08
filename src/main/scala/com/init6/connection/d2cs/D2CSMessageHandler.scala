@@ -73,7 +73,7 @@ class D2CSMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliveA
               userCache.get(packet.sessionnum).foreach(u => {
                 usersActor ! SetCharacter(u, packet.characterName, packet.characterPortrait)
               })
-              val message = s"**${userCache.get(packet.sessionnum)}** logged onto **${packet.characterName}**."
+              val message = s"**${userCache.getOrElse(packet.sessionnum, "UNKNOWN")}** logged onto **${packet.characterName}**."
               HttpUtils.postMessage("http://127.0.0.1:8080/d2_activity", message)
               send(D2CSCharLoginRequest(seqno, D2CSAuthReply.RESULT_SUCCESS))
               log.info(">> Sent D2CS_CHARLOGINREQ")
