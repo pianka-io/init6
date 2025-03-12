@@ -2,9 +2,8 @@ package com.init6.users
 
 import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
-
 import akka.actor.{ActorRef, Address, Props}
-import akka.util.Timeout
+import akka.util.{ByteString, Timeout}
 import com.init6.Constants._
 import com.init6._
 import com.init6.channels._
@@ -27,6 +26,7 @@ case class Add(connectionInfo: ConnectionInfo, user: User, protocol: Protocol) e
 case class RemoteAdd(userActor: ActorRef, username: String) extends Command
 case class Rem(ipAddress: InetSocketAddress, userActor: ActorRef) extends Command with Remotable
 case class RemActors(userActors: Set[ActorRef]) extends Command
+case class SetCharacter(username: String, character: String, statstring: ByteString) extends Command
 
 case class WhisperTo(user: User, username: String, message: String)  extends Command
 case object SubscribeAll
@@ -38,8 +38,10 @@ object UsersActor extends Init6Component {
 trait Protocol extends Command
 case object NotYetKnownProtocol extends Protocol
 case object BinaryProtocol extends Protocol
+case object RealmProtocol extends Protocol
 case object TelnetProtocol extends Protocol
 case object Chat1Protocol extends Protocol
+case object D2CSProtocol extends Protocol
 
 case object GetUsers extends Command
 case object GetUptime extends Command
@@ -60,7 +62,6 @@ class UsersActor extends Init6RemotingActor with Init6LoggingActor {
   val remoteUsersMap = RemoteMultiMap[Address, ActorRef]()
 
   val ipLimitMap = mutable.HashMap[Int, Int]()
-
   val placeMap = mutable.SortedMap[Long, Int]()
 
   private def sendGetUsers(address: Address): Unit = {
@@ -258,6 +259,12 @@ class UsersActor extends Init6RemotingActor with Init6LoggingActor {
       } else {
         sender() ! UsersUserNotAdded()
       }
+
+    case SetCharacter(username, character, statstring) =>
+      val user = users.get(username)
+      user.foreach(u => {
+        u._2 ! SetCharacter(username, character, statstring)
+      })
 
     case Rem(ipAddress, userActor) =>
       rem(userActor)

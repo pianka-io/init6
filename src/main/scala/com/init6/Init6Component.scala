@@ -56,8 +56,8 @@ private object SystemContext {
   sys.props += "akka.remote.artery.canonical.hostname" -> Config().Server.akka_host
   sys.props += "akka.remote.artery.canonical.port" -> Config().Server.akka_port.toString
 
-  val system = ActorSystem(Constants.INIT6, Config.load("src/main/resources/akka.conf"))
-//  val system = ActorSystem(Constants.INIT6, Config.load("akka.conf"))
+//  val system = ActorSystem(Constants.INIT6, Config.load("src/main/resources/akka.conf"))
+  val system = ActorSystem(Constants.INIT6, Config.load("akka.conf"))
 
   val startMillis = System.currentTimeMillis()
   private val start = System.nanoTime()

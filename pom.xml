@@ -90,6 +90,16 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+                <configuration>
+                    <excludes>
+                        <exclude>src/main/resources/**</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
@@ -123,6 +133,12 @@
                     <artifactId>scala-library</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.softwaremill.sttp.client3</groupId>
+            <artifactId>okhttp-backend_2.12</artifactId>
+            <version>3.9.2</version>
         </dependency>
 
         <dependency>

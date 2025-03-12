@@ -51,6 +51,14 @@ object BinaryChatEncoder extends Encoder {
         None
     }
   }
+  
+  def massageName(name: String): String = {
+    if (name.contains("*")) {
+      name.split('*')(1)
+    } else {
+      name
+    }
+  }
 
   def handleArrayEvent(packetId: Byte, messages: Array[String]) = {
     messages

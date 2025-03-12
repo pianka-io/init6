@@ -6,7 +6,7 @@ import com.init6.channels.{UserInfo, UserInfoArray}
 import com.init6.coders.IPUtils
 import com.init6.coders.commands.{PrintConnectionLimit, UnIpBanCommand}
 import com.init6.{Config, Init6Component, Init6RemotingActor}
-
+import sys.process._
 import scala.collection.mutable
 
 /**
@@ -28,7 +28,7 @@ class IpLimitActor(limit: Int) extends Init6RemotingActor {
 
   val actorToIp = mutable.HashMap.empty[ActorRef, Int]
   val ipCount = mutable.HashMap.empty[Int, Int]
-  val ipConnectionTimes = mutable.HashMap.empty[Int, mutable.PriorityQueue[Long]]
+  val ipTotalCount = mutable.HashMap.empty[Int, Int]
   val ipBanned = mutable.HashMap.empty[Int, Long]
 
   def addIpConnection(addressInt: Int) = {
@@ -36,22 +36,11 @@ class IpLimitActor(limit: Int) extends Init6RemotingActor {
 
     if (Config().AntiFlood.ReconnectLimit.enabled &&
       getAcceptingUptime.toSeconds >= Config().AntiFlood.ReconnectLimit.ignoreAtStartFor) {
-
-      ipConnectionTimes
-        .get(addressInt)
-        .fold({
-          ipConnectionTimes += addressInt -> mutable.PriorityQueue(t)(Ordering[Long].reverse)
-          true
-        })(queue => {
-          // more than 20 times within 1 min
-          val allowed = Config().AntiFlood.ReconnectLimit.inPeriod
-          while (queue.nonEmpty && t - queue.head >= allowed) {
-            queue.dequeue()
-          }
-          queue += t
-          queue.length < Config().AntiFlood.ReconnectLimit.times
-        })
+      val totalCount = ipTotalCount.getOrElse(addressInt, 0) + 1
+      ipTotalCount.update(addressInt, totalCount)
+      totalCount <= 1000
     } else {
+      log.info("NOT ENABLED")
       true
     }
   }
@@ -64,10 +53,12 @@ class IpLimitActor(limit: Int) extends Init6RemotingActor {
       ) {
         sender() ! NotAllowed(connectionInfo)
       } else {
+        val address = connectionInfo.ipAddress.getAddress.getHostAddress
         val addressInt = IPUtils.bytesToDword(connectionInfo.ipAddress.getAddress.getAddress)
         val current = ipCount.getOrElse(addressInt, 0)
         if (!addIpConnection(addressInt)) {
           ipBanned += addressInt -> (System.currentTimeMillis() + (Config().AntiFlood.ReconnectLimit.ipBanTime * 1000))
+          s"sudo nft add rule inet filter input ip saddr ${address} drop".!
         }
         val isIpBanned = ipBanned.get(addressInt).exists(until => {
           if (System.currentTimeMillis >= until) {

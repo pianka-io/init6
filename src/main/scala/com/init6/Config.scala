@@ -25,8 +25,8 @@ object Config {
 
   def reload() = {
     this.synchronized {
-//      config = new Config(sys.props("config"))
-      config = new Config("src/main/resources/init6.conf")
+      config = new Config(sys.props("config"))
+//      config = new Config("src/main/resources/init6.conf")
       config
     }
   }
@@ -116,6 +116,12 @@ sealed class Config(filePath: String) {
     val password = p.getString("password")
 
     val batchUpdateInterval = p.getInt("batch-update-interval")
+  }
+
+  object Realm {
+    private val p = root.getConfig("realm")
+
+    val ipAddress = p.getString("ip_address")
   }
 
   object AntiFlood {

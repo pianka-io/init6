@@ -1,7 +1,6 @@
 package com.init6.connection.binary
 
 import java.util.concurrent.TimeUnit
-
 import akka.actor.{ActorRef, FSM, PoisonPill, Props}
 import akka.io.Tcp.Received
 import akka.util.{ByteString, Timeout}
@@ -14,9 +13,11 @@ import com.init6.coders.binary.packets.Packets._
 import com.init6.coders.binary.packets._
 import com.init6.coders.commands.{FriendsList, PongCommand}
 import com.init6.connection._
-import com.init6.db.{CreateAccount, DAO, DAOCreatedAck, UpdateAccountPassword}
+import com.init6.connection.d2cs.D2CSMessageHandler.userCache
+import com.init6.connection.d2cs.{D2CSGameRequest, D2CSGameResponse, D2CSMessageHandler}
+import com.init6.db.{CreateAccount, DAO, DAOCreatedAck, RealmCreateCookie, RealmCreateCookieAck, UpdateAccountPassword}
 import com.init6.users._
-import com.init6.utils.LimitedAction
+import com.init6.utils.{HttpUtils, LimitedAction}
 
 import scala.util.Random
 
@@ -38,6 +39,8 @@ case object ExpectingChangePasswordHandled extends BinaryState
 case object ExpectingSidCreateAccountFromDAO extends BinaryState
 case object ExpectingSidCreateAccount2FromDAO extends BinaryState
 case object LoggedIn extends BinaryState
+
+case object ExpectingRealmCreateCookieFromDAO extends BinaryState
 
 case class BinaryPacket(packetId: Byte, packet: ByteString)
 
@@ -63,6 +66,7 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
   var ping: Int = -1
 
   var clientToken: Int = _
+  var userId: Long = _
   var username: String = _
   var oldUsername: String = _
   var productId: String = _
@@ -73,6 +77,39 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
   def handleRest(binaryPacket: BinaryPacket): State = {
     log.debug(">> {} Received: {}", connectionInfo.actor, f"${binaryPacket.packetId}%X")
     binaryPacket.packetId match {
+      /* Sanctuary */
+      case SID_QUERYREALMS2 =>
+        binaryPacket.packet match {
+          case SidQueryRealms2(packet) =>
+            send(SidQueryRealms2())
+        }
+      case SID_LOGONREALMEX =>
+        binaryPacket.packet match {
+          case SidLogonRealmEx(packet) =>
+            daoActor ! RealmCreateCookie(userId)
+            return goto(ExpectingRealmCreateCookieFromDAO)
+        }
+      case SID_STARTADVEX3 =>
+        D2CSMessageHandler.actor match {
+          case Some(actor) =>
+            log.info("SID_STARTADVEX3 Some")
+            binaryPacket.packet match {
+              case SidStartAdvEx3(packet) =>
+//                val message = s"**${username}** created game **${packet.name}**."
+//                HttpUtils.postMessage("http://127.0.0.1:8889/d2_activity", message)
+                actor ! D2CSGameRequest(0, packet.name)
+            }
+          case None =>
+            log.info("SID_STARTADVEX3 None")
+            send(SidStartAdvEx3(SidStartAdvEx3.RESULT_UNAVAILABLE))
+        }
+      case SID_NOTIFYJOIN =>
+        binaryPacket.packet match {
+          case SidNotifyJoin(packet) =>
+            val message = s"**${username}** joined game **${packet.name}**."
+            HttpUtils.postMessage("http://127.0.0.1:8889/d2_activity", message)
+        }
+      /* Sanctuary */
       case SID_NULL =>
         binaryPacket.packet match {
           case SidNull(packet) =>
@@ -100,6 +137,25 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
           case SidGetChannelList(packet) =>
             send(SidGetChannelList())
         }
+      case SID_READUSERDATA =>
+        binaryPacket.packet match {
+          case SidReadUserData(packet) =>
+            // We currently don't store any profile information
+            val keys = (0 until packet.numAccounts).flatMap(_ => {
+              (0 until packet.numKeys).map(_ => "")
+            }).toArray
+            send(SidReadUserData(packet.numAccounts, packet.numKeys, packet.requestId, keys))
+        }
+      case SID_GETICONDATA =>
+        binaryPacket.packet match {
+          case SidGetIconData(packet) =>
+            send(SidGetIconData())
+        }
+      case SID_GETFILETIME =>
+        binaryPacket.packet match {
+          case SidGetFileTime(packet) =>
+            send(SidGetFileTime(packet.requestId, packet.fileName))
+        }
       case SID_FRIENDSLIST =>
         binaryPacket.packet match {
           case SidFriendsList(packet) =>
@@ -109,6 +165,14 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
         binaryPacket.packet match {
           case SidGetIconData(packet) =>
             send(SidGetIconData())
+        }
+      case SID_ENTERCHAT =>
+        binaryPacket.packet match {
+          case SidEnterChat(packet) =>
+            send(SidEnterChat(username, oldUsername, productId))
+            send(BinaryChatEncoder(UserInfoArray(Config().motd)).get)
+            keepAlive(actor, () => sendPing())
+            goto(LoggedIn)
         }
 //      case SID_LEAVECHAT =>
 //        binaryPacket.packet match {
@@ -120,6 +184,12 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
         log.error(">> {} Unexpected: {}", connectionInfo.actor, f"$packetId%X")
     }
     stay()
+  }
+
+  when(ExpectingRealmCreateCookieFromDAO) {
+    case Event(RealmCreateCookieAck(cookie), _) =>
+      send(SidLogonRealmEx(cookie, username))
+      goto(ExpectingSidEnterChat)
   }
 
   def send(data: ByteString) = {
@@ -160,7 +230,7 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
             case SidAuthInfo(packet) =>
               productId = packet.productId
               sendPing()
-              send(SidAuthInfo(serverToken))
+              send(SidAuthInfo(serverToken, connectionInfo.place))
               goto(ExpectingSidAuthCheck)
             case _ => stop()
           }
@@ -279,6 +349,7 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
   when(ExpectingLogonHandled) {
     case Event(UsersUserAdded(userActor, user), _) =>
       this.actor = userActor
+      this.userId = user.id
       this.username = user.name
       send(SidLogonResponse(SidLogonResponse.RESULT_SUCCESS))
       goto(ExpectingSidEnterChat) using userActor
@@ -292,11 +363,14 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
   when(ExpectingLogon2Handled) {
     case Event(UsersUserAdded(userActor, user), _) =>
       this.actor = userActor
+      this.userId = user.id
       this.username = user.name
       send(SidLogonResponse2(SidLogonResponse2.RESULT_SUCCESS))
       goto(ExpectingSidEnterChat) using userActor
     case Event(UsersUserNotAdded(), _) =>
       stop()
+    case Event(WrittenOut, _) =>
+      stay()
     case x =>
       log.debug(">> {} Unhandled in ExpectingLogon2Handled {}", connectionInfo.actor, x)
       stop()
@@ -459,6 +533,11 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
   }
 
   when(LoggedIn) {
+    case Event(D2CSGameResponse(successful), _) =>
+      log.info(">> Received D2CSGameResponse")
+      send(SidStartAdvEx3(if (successful) 0 else 1))
+      log.info(">> Sent SID_STARTADVEX3")
+      stay()
     case Event(BinaryPacket(packetId, data), actor) =>
       log.debug(">> {} Received: {}", connectionInfo.actor, f"$packetId%X")
       keptAlive = 0
