@@ -230,7 +230,7 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
             case SidAuthInfo(packet) =>
               productId = packet.productId
               sendPing()
-              send(SidAuthInfo(serverToken))
+              send(SidAuthInfo(serverToken, connectionInfo.place))
               goto(ExpectingSidAuthCheck)
             case _ => stop()
           }
