@@ -41,6 +41,8 @@ object Flags {
   val PGL_OFFICIAL = 0x400
   val KBK_PLAYER = 0x800
   val WCG_OFFICIAL = 0x1000
+  //Use enumeration for cleanness? meh...
+  val validFlagMask = BLIZZ_REP | OP | SPEAKER | ADMIN | UDP | SQUELCH | SPECIAL_GUEST | BEEP | PGL_PLAYER | PGL_OFFICIAL | KBK_PLAYER | WCG_OFFICIAL
 
   //Added BLIZZ_REP to can BAN
   private val CAN_BAN = BLIZZ_REP | ADMIN | OP
@@ -60,6 +62,30 @@ object Flags {
 
   def squelch(user: User): User = flag(user, SQUELCH)
   def unsquelch(user: User): User = unflag(user, SQUELCH)
+
+  def parseAndValidateFlag(updateFlag: String): Option[Int] = {
+    // Parse the flag input (hex or decimal)
+    val update = if (updateFlag.startsWith("0x")) {
+      Integer.parseInt(updateFlag.substring(2), 16)  // Parse hex
+    } else {
+      Integer.parseInt(updateFlag)  // Parse decimal
+    }
+
+    // Validate the flag
+    if ((update & validFlagMask) == update) {
+      Some(update)
+    } else {
+      None  // Invalid flag
+    }
+  }
+
+  def adminAddFlags(user: User, updateFlag: Int): User = {
+    flag(user, updateFlag) // Flag the user
+  }
+
+  def adminRemoveFlags(user: User, updateFlag: Int): User = {
+    unflag(user, updateFlag) // Unflag the user
+  }
 
   //Added BLIZZ_REP to isAdmin
   def isAdmin(user: User): Boolean = is(user, ADMIN) || is(user, BLIZZ_REP)

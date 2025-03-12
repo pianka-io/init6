@@ -4,7 +4,8 @@ import akka.util.ByteString
 import com.init6.Constants._
 import com.init6.ReloadConfig
 import com.init6.channels._
-import com.init6.db.ReloadDb
+import com.init6.coders.binary.hash.BSHA1
+import com.init6.db.{ReloadDb, UpdateAccountPassword}
 import com.init6.users.GetRankingCommand
 
 /**
@@ -108,7 +109,7 @@ object CommandDecoder {
         case "users" => UsersCommand
         case "whisper" | "w" | "msg" | "m" => WhisperMessage(user, message)
         case "whoami" => WhoamiCommand(user)
-        case "whois" | "whereis" => OneCommand(WhoisCommand(user, message), UserError(USER_NOT_LOGGED_ON), WhoamiCommand(user))
+        case "whois" | "where" | "whereis" => OneCommand(WhoisCommand(user, message), UserError(USER_NOT_LOGGED_ON), WhoamiCommand(user))
         case "who" => OneCommand(WhoCommand(user, message, opsOnly = false), WhoCommand(user, user.inChannel, opsOnly = false))
         //case "!bl!zzme!" => BlizzMe(user)
         case _ => UserError()
@@ -133,7 +134,12 @@ object CommandDecoder {
           case "showuserbans" => ShowUserBans(message)
           case "usermute" | "muteuser" => UserMute(message)
           case "userunmute" | "unmuteuser" => UserUnmute(message)
-          //case "setuserflags" | "setuf" => UserFlagsCommand(message)
+          case "setuserpassword" | "setpass" => val (account, newpassword) = spanBySpace(message)
+            SetAccountPasswordCommand(account, newpassword)
+          case "adduserflags" | "addflags" => val (account, flags) = CommandDecoder.spanBySpace(message)
+            AddUserFlagsCommand(account, flags)
+          case "removeuserflags" | "remflags" => val (account, flags) = CommandDecoder.spanBySpace(message)
+            RemoveUserFlagsCommand(account, flags)
           case _ => userCommand
         }
       } else {

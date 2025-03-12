@@ -242,6 +242,19 @@ class UsersActor extends Init6RemotingActor with Init6LoggingActor {
     case UptimeCommand =>
       sender() ! UptimeCommand()
 
+    case command@AddUserFlagsCommand(account, flags) =>
+      users.get(account)
+        .map {
+          case (account, actor) =>
+            actor ! AddUserFlags(flags)
+
+        }
+    case command@RemoveUserFlagsCommand(account, flags) =>
+      users.get(account)
+        .map {
+          case (account, actor) => actor ! RemUserFlags(flags)
+        }
+
     case event =>
       //log.error(s"event $event from ${sender()}")
       if (isLocal()) {
@@ -281,6 +294,9 @@ class UsersActor extends Init6RemotingActor with Init6LoggingActor {
 
     case IpBanCommand(ipAddress, _) =>
       localUsers ! DisconnectOnIp(ipAddress)
+
+    case UpdateUserFlags(user) =>
+      localUsers ! UserFlags(user)
 
     case PrintLoginLimit =>
       sender() ! UserInfoArray(

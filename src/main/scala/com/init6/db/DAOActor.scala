@@ -2,7 +2,7 @@ package com.init6.db
 
 import akka.actor.Props
 import com.init6.Constants._
-import com.init6.channels.{User, UserError}
+import com.init6.channels.{Flags, User, UserError}
 import com.init6.coders.commands.Command
 import com.init6.coders.realm.packets.McpCharCreate.{McpCharCreate, RESULT_SUCCESS}
 import com.init6.realm.Statstring
@@ -20,10 +20,13 @@ case object ReloadDb extends Command with Remotable
 case object ReloadDbAck extends Command
 case class CreateAccount(username: String, passwordHash: Array[Byte]) extends Remotable
 case class UpdateAccountPassword(username: String, passwordHash: Array[Byte]) extends Remotable
+case class AddAccountFlags(username: String, flags: Int) extends Remotable
+case class RemoveAccountFlags(username: String, flags: Int) extends Remotable
 case class CloseAccount(username: String, reason: String = "") extends Remotable
 case class OpenAccount(username: String) extends Remotable
 case class DAOCreatedAck(username: String, passwordHash: Array[Byte]) extends Command
 case class DAOUpdatedPasswordAck(username: String, passwordHash: Array[Byte]) extends Command
+case class DAOUpdateAccountFlagsAck(username: String, flags: Int) extends Command
 case class DAOClosedAccountAck(username: String, reason: String) extends Command
 case class DAOOpenedAccountAck(username: String) extends Command
 
@@ -117,6 +120,20 @@ class DAOActor extends Init6RemotingActor {
       DAO.updateUser(username, password_hash = Some(passwordHash))
       if (isLocal()) {
         sender() ! DAOUpdatedPasswordAck(username, passwordHash)
+      }
+
+    case AddAccountFlags(username, flags) =>
+      DAO.getUser(username).foreach { user =>
+        val updatedFlags = user.flags | flags
+        DAO.updateUser(username, flags = Some(updatedFlags))
+        if (isLocal()) sender() ! DAOUpdateAccountFlagsAck(username, updatedFlags)
+      }
+
+    case RemoveAccountFlags(username, flags) =>
+      DAO.getUser(username).foreach { user =>
+        val updatedFlags = user.flags & ~flags
+        DAO.updateUser(username, flags = Some(updatedFlags))
+        if (isLocal()) sender() ! DAOUpdateAccountFlagsAck(username, updatedFlags)
       }
 
     case CloseAccount(username, reason) =>

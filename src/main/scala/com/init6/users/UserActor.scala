@@ -47,6 +47,8 @@ case class PingSent(time: Long, cookie: String) extends Command
 case class UpdatePing(ping: Int) extends Command
 case object KillConnection extends Command
 case class DisconnectOnIp(ipAddress: Array[Byte]) extends Command
+case class AddUserFlags(flags: Int) extends Command
+case class RemUserFlags(flags: Int) extends Command
 
 class UserActor(connectionInfo: ConnectionInfo, var user: User, var encoder: Encoder)
   extends FloodPreventer with Init6Actor with Init6LoggingActor {
@@ -145,6 +147,14 @@ class UserActor(connectionInfo: ConnectionInfo, var user: User, var encoder: Enc
       log.debug("matched UserUnsquelched")
       squelchedUsers -= username
 
+    case AddUserFlags(flags) =>
+      user = Flags.adminAddFlags(user, flags)
+      channelActor ! UpdateUserFlags(user)
+
+    case RemUserFlags(flags) =>
+      user = Flags.adminRemoveFlags(user, flags)
+      channelActor ! UpdateUserFlags(user)
+
     case chatEvent: ChatEvent =>
       log.debug("matched ChatEvent")
       handleChatEvent(chatEvent)
@@ -218,6 +228,10 @@ class UserActor(connectionInfo: ConnectionInfo, var user: User, var encoder: Enc
     case DAOUpdatedPasswordAck(username, passwordHash) =>
       log.debug("matched DAOUpdatedPasswordAck")
       self ! UserInfo(ACCOUNT_UPDATED(username, passwordHash))
+
+    case DAOUpdateAccountFlagsAck(username, flags) =>
+      log.debug("matched DAOUpdateAccountFlagsAck")
+      self ! UserInfo(ACCOUNT_FLAGS_UPDATED(username, flags))
 
     case DAOClosedAccountAck(username, reason) =>
       log.debug("matched DAOClosedAccountAck")
@@ -368,6 +382,17 @@ class UserActor(connectionInfo: ConnectionInfo, var user: User, var encoder: Enc
               daoActor ! CloseAccount(account, reason)
             case command@OpenAccountCommand(account) =>
               daoActor ! OpenAccount(account)
+            case command@SetAccountPasswordCommand(account, newPassword) =>
+              daoActor ! UpdateAccountPassword(account, newPassword)
+            case command@AddUserFlagsCommand(account, flags) =>
+              usersActor ! command
+              daoActor ! AddAccountFlags(account, flags)
+            case command@RemoveUserFlagsCommand(account, flags) =>
+              usersActor ! command
+              //cant send the new flag...
+              daoActor ! RemoveAccountFlags(account, flags)
+
+              //Change DB and update channel... daoActor for update? and also channelActor?
             case ReloadConfig =>
               Config.reload()
               self ! UserInfo(s"$INIT6_SPACE configuration reloaded.")
