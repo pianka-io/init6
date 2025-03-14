@@ -128,6 +128,8 @@ object Constants {
   val ACCOUNT_CONTAINS_ILLEGAL = s"Account contains illegal characters."
   val ACCOUNT_CREATED = (name: String, passwordHash: Array[Byte]) => s"Created account $name with password hash ${getStringFromHash(passwordHash)}."
   val ACCOUNT_UPDATED = (name: String, passwordHash: Array[Byte]) => s"Changed password of account $name to hash ${getStringFromHash(passwordHash)}."
+  val ACCOUNT_FLAGS_UPDATED = (name: String, flags: Int) => s"Account: $name flags updated to 0x${flags.toHexString.toUpperCase}."
+  val INVALID_FLAG = (flags: String) => s"Flags: $flags are invalid!"
   val NO_ACCOUNT_INPUT = "What account do you want to make?"
   val NO_PASSWORD_INPUT = "You did not enter a password."
 
