@@ -188,7 +188,7 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
 
   when(ExpectingRealmCreateCookieFromDAO) {
     case Event(RealmCreateCookieAck(cookie), _) =>
-      send(SidLogonRealmEx(cookie, username))
+      send(SidLogonRealmEx(cookie, oldUsername))
       goto(ExpectingSidEnterChat)
   }
 
