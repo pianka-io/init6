@@ -32,6 +32,7 @@ object ChannelActor {
       //case "dark" => new DiabOTChannelActor(name)
       //case "andariel" | "duriel" | "belial" | "azmodan" => new LesserEvilChannelActor(name)
       //case "deckard cain" => new DeckardCainChannelActor("Deckard Cain")
+      case "diablo ii" => PublicLimitlessChannelActor("Diablo II")
       case _ => PrivateChannelActor(name)
     }
   })
