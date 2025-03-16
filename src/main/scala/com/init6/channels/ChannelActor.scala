@@ -72,6 +72,7 @@ case class ChannelJoinResponse(message: ChatEvent) extends Command
 case class WhoCommandResponse(whoResponseMessage: Option[String], userMessages: Seq[String]) extends Command
 case class WhoCommandError(errorMessage: String) extends Command
 case class PrintChannelUsersResponse(chatEvent: ChatEvent) extends Command
+case class UpdateUserFlags(user: User) extends Command
 
 trait ChannelActor extends Init6RemotingActor {
 
@@ -286,6 +287,10 @@ trait ChannelActor extends Init6RemotingActor {
           "ReverseUsernames: " + reverseUsernames
         ))
       )
+    case UpdateUserFlags(user) =>
+      reverseUsernames.get(user.name).foreach { actor =>
+        sendUserUpdate(actor, user)
+      }
     case event =>
       //println("Unhandled ChannelActor " + event)
   }
