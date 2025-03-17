@@ -38,7 +38,7 @@ class IpLimitActor(limit: Int) extends Init6RemotingActor {
       getAcceptingUptime.toSeconds >= Config().AntiFlood.ReconnectLimit.ignoreAtStartFor) {
       val totalCount = ipTotalCount.getOrElse(addressInt, 0) + 1
       ipTotalCount.update(addressInt, totalCount)
-      totalCount <= 1000
+      totalCount <= Config().AntiFlood.ReconnectLimit.times
     } else {
       log.info("NOT ENABLED")
       true
