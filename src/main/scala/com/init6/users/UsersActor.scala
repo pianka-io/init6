@@ -27,6 +27,8 @@ case class RemoteAdd(userActor: ActorRef, username: String) extends Command
 case class Rem(ipAddress: InetSocketAddress, userActor: ActorRef) extends Command with Remotable
 case class RemActors(userActors: Set[ActorRef]) extends Command
 case class SetCharacter(username: String, character: String, statstring: ByteString) extends Command
+case class SetRealm(username: String, realm: String) extends Command
+case class JoinGame(username: String, game: String)
 
 case class WhisperTo(user: User, username: String, message: String)  extends Command
 case object SubscribeAll
@@ -277,6 +279,18 @@ class UsersActor extends Init6RemotingActor with Init6LoggingActor {
       val user = users.get(username)
       user.foreach(u => {
         u._2 ! SetCharacter(username, character, statstring)
+      })
+
+    case SetRealm(username, realm) =>
+      val user = users.get(username)
+      user.foreach(u => {
+        u._2 ! SetRealm(username, realm)
+      })
+
+    case JoinGame(username, game) =>
+      val user = users.get(username)
+      user.foreach(u => {
+        u._2 ! JoinGame(username, game)
       })
 
     case Rem(ipAddress, userActor) =>

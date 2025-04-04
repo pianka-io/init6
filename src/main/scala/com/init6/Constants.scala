@@ -34,6 +34,7 @@ object Constants {
   val CHANNELS_DISPATCHER = "channels-dispatcher"
   val USERS_DISPATCHER = "users-dispatcher"
   val SERVER_REGISTRY_DISPATCHER = "server-registry-dispatcher"
+  val D2CS_REALMS_PATH = "Realms"
 
   val WILL_DROP_IN = (serverIp: String, time: Long) => s"$serverIp will drop within 1 minute!"
 

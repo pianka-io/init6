@@ -49,8 +49,10 @@ case class User(
   client: String = "CHAT",
 
   // Changeable
+  var realm: Option[String] = None,
   var character: Option[String] = None,
   var statstring: Option[ByteString] = None,
+  var inGame: Option[String] = None,
   inChannel: String = "",
   channelTimestamp: Long = 0
 ) extends Command
@@ -262,7 +264,6 @@ trait ChannelActor extends Init6RemotingActor {
       users
         .values
         .foreach(userActor ! UserIn(_))
-
     case c@ AddUser(actor, user, _) => add(actor, user)
     case RemUser(actor) => rem(actor)
     case CheckSize => sender() ! ChannelSize(self, name, users.size)

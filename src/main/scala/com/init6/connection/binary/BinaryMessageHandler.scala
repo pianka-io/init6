@@ -13,8 +13,7 @@ import com.init6.coders.binary.packets.Packets._
 import com.init6.coders.binary.packets._
 import com.init6.coders.commands.{FriendsList, PongCommand}
 import com.init6.connection._
-import com.init6.connection.d2cs.D2CSMessageHandler.userCache
-import com.init6.connection.d2cs.{D2CSGameRequest, D2CSGameResponse, D2CSMessageHandler}
+import com.init6.connection.d2cs.{GetRealmLoginInfo, GetRealms, RealmLoginInfoResponse, RealmNamesList, ReceivedGameRequest, ReceivedGameResponse}
 import com.init6.db.{CreateAccount, DAO, DAOCreatedAck, RealmCreateCookie, RealmCreateCookieAck, UpdateAccountPassword}
 import com.init6.users._
 import com.init6.utils.{HttpUtils, LimitedAction}
@@ -70,6 +69,7 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
   var username: String = _
   var oldUsername: String = _
   var productId: String = _
+  var realmName: String = _
 
   var actor: ActorRef = ActorRef.noSender
 
@@ -81,33 +81,28 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
       case SID_QUERYREALMS2 =>
         binaryPacket.packet match {
           case SidQueryRealms2(packet) =>
-            send(SidQueryRealms2())
+            //send(SidQueryRealms2(Config().Realm.realms))
+          d2csActor ! GetRealms(connectionInfo)
         }
       case SID_LOGONREALMEX =>
         binaryPacket.packet match {
           case SidLogonRealmEx(packet) =>
+            realmName = packet.realmName //Set realm to what the client selected
+            usersActor ! SetRealm(username, realmName)
             daoActor ! RealmCreateCookie(userId)
             return goto(ExpectingRealmCreateCookieFromDAO)
         }
       case SID_STARTADVEX3 =>
-        D2CSMessageHandler.actor match {
-          case Some(actor) =>
-            log.info("SID_STARTADVEX3 Some")
-            binaryPacket.packet match {
-              case SidStartAdvEx3(packet) =>
-//                val message = s"**${username}** created game **${packet.name}**."
-//                HttpUtils.postMessage("http://127.0.0.1:8889/d2_activity", message)
-                actor ! D2CSGameRequest(0, packet.name)
-            }
-          case None =>
-            log.info("SID_STARTADVEX3 None")
-            send(SidStartAdvEx3(SidStartAdvEx3.RESULT_UNAVAILABLE))
+        binaryPacket.packet match {
+          case SidStartAdvEx3(packet) =>
+            d2csActor ! ReceivedGameRequest(self, username, realmName, packet.name)
         }
       case SID_NOTIFYJOIN =>
         binaryPacket.packet match {
           case SidNotifyJoin(packet) =>
             val message = s"**${username}** joined game **${packet.name}**."
             HttpUtils.postMessage("http://127.0.0.1:8889/d2_activity", message)
+            usersActor ! JoinGame(username, packet.name) //Add Product later!
         }
       /* Sanctuary */
       case SID_NULL =>
@@ -188,7 +183,10 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
 
   when(ExpectingRealmCreateCookieFromDAO) {
     case Event(RealmCreateCookieAck(cookie), _) =>
-      send(SidLogonRealmEx(cookie, oldUsername))
+      //Use config information for now!
+      //d2csActor ! GetRealmLoginInfo(connectionInfo, cookie, realmName, oldUsername)
+      log.info(s">> Sent SID_LOGONREALMEX($cookie, $username)")
+      send(SidLogonRealmEx(cookie, realmName, oldUsername))
       goto(ExpectingSidEnterChat)
   }
 
@@ -517,6 +515,13 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
   }
 
   when(ExpectingSidEnterChat) {
+    case Event(RealmNamesList(allRealmNames), _) =>
+      send(SidQueryRealms2(allRealmNames))
+      stay()
+    case Event(RealmLoginInfoResponse(realmName, cookie, ip, port, username), _) => //Not used. Using config for realm info currently.
+      log.info(s">> Sent SID_LOGONREALMEX($cookie, $ip, $port, $username)")
+      //send(SidLogonRealmEx(cookie, ip, port, username))
+      stay()
     case Event(BinaryPacket(packetId, data), actor) =>
       log.debug(">> {} Received: {}", connectionInfo.actor, f"$packetId%X")
       packetId match {
@@ -533,10 +538,13 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
   }
 
   when(LoggedIn) {
-    case Event(D2CSGameResponse(successful), _) =>
-      log.info(">> Received D2CSGameResponse")
-      send(SidStartAdvEx3(if (successful) 0 else 1))
-      log.info(">> Sent SID_STARTADVEX3")
+    //For now, have this in both since after it's logged in, it will stay here.
+    case Event(RealmNamesList(allRealmNames), _) =>
+      send(SidQueryRealms2(allRealmNames))
+      stay()
+    case Event(ReceivedGameResponse(result), _) =>
+      send(SidStartAdvEx3(result))
+      log.info(s">> Sent SID_STARTADVEX3(${result})")
       stay()
     case Event(BinaryPacket(packetId, data), actor) =>
       log.debug(">> {} Received: {}", connectionInfo.actor, f"$packetId%X")

@@ -1,7 +1,8 @@
 package com.init6
 
-import java.io.File
+import com.init6.Config.getAllRealmInfo
 
+import java.io.File
 import com.init6.coders.commands.Command
 import com.typesafe.config.ConfigFactory
 
@@ -39,6 +40,21 @@ object Config {
       ConfigFactory.load(filePath)
     }
   }
+
+  def getAllRealmInfo(realms: Array[String]): List[(String, String, Int)] = {
+    realms.flatMap { realmInfo =>
+      realmInfo.split("@") match {
+        case Array(realmName, address) =>
+          address.split(":") match {
+            case Array(ip, port) if port.forall(_.isDigit) => Some((realmName, ip, port.toInt))
+            case Array(ip) => Some((realmName, ip, 6113)) // Default port if missing
+            case _ => None
+          }
+        case _ => None
+      }
+    }.toList
+  }
+
 }
 
 sealed class Config(filePath: String) {
@@ -120,8 +136,9 @@ sealed class Config(filePath: String) {
 
   object Realm {
     private val p = root.getConfig("realm")
-
-    val ipAddress = p.getString("ip_address")
+    //Get description?
+    val realmList = p.getStringList("realms").asScala.toArray
+    val realms = getAllRealmInfo(realmList)
   }
 
   object AntiFlood {
