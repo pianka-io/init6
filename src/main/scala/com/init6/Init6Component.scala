@@ -24,6 +24,7 @@ private[init6] trait Init6Component {
   val topCommandActor = system.actorSelection(s"/user/$INIT6_TOP_COMMAND_PATH")
   val serverRegistry = system.actorSelection(s"/user/$INIT6_SERVER_REGISTRY_PATH")
   val serverAnnouncementActor = system.actorSelection(s"/user/$INIT6_SERVER_ANNOUNCEMENT_PATH")
+  val d2csActor = system.actorSelection(s"/user/$D2CS_REALMS_PATH")
 
 //  val lesserEvilAgg = system.actorSelection("/user/lesserevil")
 

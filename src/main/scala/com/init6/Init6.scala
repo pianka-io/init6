@@ -1,9 +1,9 @@
 package com.init6
 
 import java.util.concurrent.TimeUnit
-
 import akka.actor.{ActorRef, PoisonPill}
 import com.init6.channels.ChannelsActor
+import com.init6.connection.d2cs.D2CSActor
 import com.init6.connection.websocket.WebSocketConnectionHandler
 import com.init6.connection.{ConnectionHandler, IpLimitActor}
 import com.init6.db.{DAO, DAOActor}
@@ -27,6 +27,7 @@ object Init6 extends App with Init6Component {
   ChannelsActor()
   TopCommandActor()
   RankingActor()
+  D2CSActor()
 //  ServerAnnouncementActor(args(0).toLong)
 
   val random = new Random(System.nanoTime())

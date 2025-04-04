@@ -13,7 +13,7 @@ import scala.util.Try
  */
 object SidLogonRealmEx extends BinaryPacket {
 
-  case class SidLogonRealmEx(title: String)
+  case class SidLogonRealmEx(clientToken: Int, realmPasswordHash: Array[Byte], realmName: String)
 
   override val PACKET_ID: Byte = Packets.SID_LOGONREALMEX
 
@@ -27,15 +27,19 @@ object SidLogonRealmEx extends BinaryPacket {
    * (UINT32)[12] MCP Chunk 2
    * (STRING)     Battle.net unique name (* as of D2 1.14d, this is empty)
    */
-  def apply(cookie: Int, username: String): ByteString = {
+  def apply(cookie: Int, realmName: String, username: String): ByteString = {
+    val (ip, port) = Config().Realm.realms.find(_._1 == realmName)
+      .map { case (_, ip, port) => (ip, port) }
+      .getOrElse(("127.0.0.1", 6113))
+
     build(
       ByteString.newBuilder
         .putInt(cookie) // cookie
         .putInt(0x00000000) // status
         .putInt(0x00000000) // mcp chunk 1.1
         .putInt(0x00000001) // mcp chunk 1.2
-        .putInt(aton(Config().Realm.ipAddress)) // ip
-        .putInt(htons(6113)) // port
+        .putInt(aton(ip)) // ip
+        .putInt(htons(port)) // port
         .putInt(0x67C48058) // mcp chunk 2
         .putInt(0x00000000) // magic
         .putInt(0x00000000)
@@ -54,7 +58,15 @@ object SidLogonRealmEx extends BinaryPacket {
   }
 
   def unapply(data: ByteString): Option[SidLogonRealmEx] = {
-    Some(SidLogonRealmEx("Sanctuary"))
+    //Some(SidLogonRealmEx("Sanctuary"))
+    Try {
+      val debuffer = DeBuffer(data)
+      SidLogonRealmEx(
+        debuffer.dword(), //Client Token
+        debuffer.byteArray(20), //Hashed realm pw
+        debuffer.string() //Realm title
+      )
+    }.toOption
   }
 
   def aton(ip: String): Int = {
