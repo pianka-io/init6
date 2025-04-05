@@ -90,20 +90,13 @@ class UserActor(connectionInfo: ConnectionInfo, var user: User, var encoder: Enc
       user.character = Some(character)
       val fullStatstring = {
         user.client.getBytes() ++
-        user.realm.getOrElse("Unknown").getBytes() ++
+        "Sanctuary".getBytes() ++
         Array(0x2C.toByte) ++
         character.getBytes() ++
         Array(0x2C.toByte) ++
         statstring
       }
       user.statstring = Some(ByteString(fullStatstring))
-
-    case SetRealm(username, realm) =>
-      user.realm = Some(realm)
-
-    case JoinGame(username, game) =>
-      user.inGame = Some(game)
-      if (user.inChannel != "") channelActor ! RemUser(self)
 
     case JoinChannelFromConnection(channel, forceJoin) =>
       log.debug("matched JoinChannelFromConnection")
@@ -579,7 +572,7 @@ class UserActor(connectionInfo: ConnectionInfo, var user: User, var encoder: Enc
     }
     if (Flags.isAdmin(user) ||
       !Config().Server.Chat.enabled ||
-      Config().Server.Chat.channels.map(_.toLowerCase).contains(sanitizedChannel.toLowerCase)
+      Config().Server.Chat.channels.contains(sanitizedChannel.toLowerCase)
     ) {
       implicit val timeout = Timeout(2, TimeUnit.SECONDS)
       //println(user.name + " - " + self + " - SENDING JOIN")
