@@ -92,22 +92,24 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
       case SID_STARTADVEX3 =>
         D2CSMessageHandler.actor match {
           case Some(actor) =>
-            log.info("SID_STARTADVEX3 Some")
+            //log.info("SID_STARTADVEX3 Some")
             binaryPacket.packet match {
               case SidStartAdvEx3(packet) =>
 //                val message = s"**${username}** created game **${packet.name}**."
 //                HttpUtils.postMessage("http://127.0.0.1:8889/d2_activity", message)
+                log.info(s">> received SID_STARTADVEX3 for ${packet.name}")
                 actor ! D2CSGameRequest(0, packet.name)
             }
           case None =>
-            log.info("SID_STARTADVEX3 None")
+            //log.info("SID_STARTADVEX3 None")
             send(SidStartAdvEx3(SidStartAdvEx3.RESULT_UNAVAILABLE))
         }
       case SID_NOTIFYJOIN =>
         binaryPacket.packet match {
           case SidNotifyJoin(packet) =>
             val message = s"**${username}** joined game **${packet.name}**."
-            HttpUtils.postMessage("http://127.0.0.1:8889/d2_activity", message)
+            log.info(s">> received SID_NOTIFYJOIN for ${packet.name} on ${packet.productVersion}")
+            //HttpUtils.postMessage("http://127.0.0.1:8889/d2_activity", message)
         }
       /* Sanctuary */
       case SID_NULL =>
@@ -188,6 +190,7 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
 
   when(ExpectingRealmCreateCookieFromDAO) {
     case Event(RealmCreateCookieAck(cookie), _) =>
+      log.info(s"Sent SID_LOGONREALMEX(Cookie: ${cookie}, Username: ${oldUsername})")
       send(SidLogonRealmEx(cookie, oldUsername))
       goto(ExpectingSidEnterChat)
   }
@@ -534,9 +537,9 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
 
   when(LoggedIn) {
     case Event(D2CSGameResponse(successful), _) =>
-      log.info(">> Received D2CSGameResponse")
+      //log.info(">> Received D2CSGameResponse")
       send(SidStartAdvEx3(if (successful) 0 else 1))
-      log.info(">> Sent SID_STARTADVEX3")
+      log.info(s">> Sent SID_STARTADVEX3(Result: ${successful})")
       stay()
     case Event(BinaryPacket(packetId, data), actor) =>
       log.debug(">> {} Received: {}", connectionInfo.actor, f"$packetId%X")

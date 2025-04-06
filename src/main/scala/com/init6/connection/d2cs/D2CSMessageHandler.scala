@@ -36,43 +36,43 @@ class D2CSMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliveA
   val selfSessionnum: Int = D2CSMessageHandler.nextSessionNum
   D2CSMessageHandler.nextSessionNum += 1
   send(D2CSAuthRequest(selfSessionnum))
-  log.info(">> Sent D2CS_AUTHREQ")
+  log.info(s">> Sent D2CS_AUTHREQ(Session #: ${selfSessionnum})")
 
   startWith(Always, ActorRef.noSender)
   context.watch(connectionInfo.actor)
 
   when (Always) {
     case Event(D2CSGameRequest(difficulty, name), _) =>
-      log.info(">> Received D2CSGameRequest")
+      log.info(s">> Received D2CSGameRequest for ${name}")
       D2CSMessageHandler.gameCache += name -> sender()
       send(D2CSGameInfoRequest(name))
-      log.info(">> Sent D2CS_GAMEINFOREQ")
+      log.info(s">> Sent D2CS_GAMEINFOREQ(Game name: ${name})")
       stay()
     case Event(D2CSPacket(id, seqno, data), _) =>
       id match {
         case Packets.D2CS_AUTHREPLY =>
           data match {
             case D2CSAuthReply(packet) =>
-              log.info(">> Received D2CS_AUTHREPLY")
+              log.info(s">> Received D2CS_AUTHREPLY Sequence # ${seqno} for ${packet.realmName}")
               send(D2CSAuthReply(seqno, D2CSAuthReply.RESULT_SUCCESS))
-              log.info(">> Sent D2CS_AUTHREPLY")
+              log.info(s">> Sent D2CS_AUTHREPLY(Sequence #: ${seqno}, Result: ${D2CSAuthReply.RESULT_SUCCESS})")
           }
         case Packets.D2CS_ACCOUNTLOGINREQ =>
           data match {
             case D2CSAccountLoginRequest(packet) =>
-              log.info(">> Received D2CS_ACCOUNTLOGINREQ")
+              log.info(s">> Received D2CS_ACCOUNTLOGINREQ Sequence # ${seqno} for ${packet.sessionnum} and ${packet.accountName}")
               if (!userCache.contains(packet.sessionnum)) {
                 val message = s"**${packet.accountName}** signed into **Sanctuary**."
-                HttpUtils.postMessage("http://127.0.0.1:8889/d2_activity", message)
+                //HttpUtils.postMessage("http://127.0.0.1:8889/d2_activity", message)
               }
               userCache += packet.sessionnum -> packet.accountName
               send(D2CSAccountLoginRequest(seqno, D2CSAuthReply.RESULT_SUCCESS))
-              log.info(">> Sent D2CS_ACCOUNTLOGINREQ")
+              log.info(s">> Sent D2CS_ACCOUNTLOGINREQ(Sequence #: ${seqno}, Result: ${D2CSAuthReply.RESULT_SUCCESS})")
           }
         case Packets.D2CS_CHARLOGINREQ =>
           data match {
             case D2CSCharLoginRequest(packet) =>
-              log.info(">> Received D2CS_CHARLOGINREQ")
+              log.info(s">> Received D2CS_CHARLOGINREQ Sequence # ${seqno} for ${packet.sessionnum} and ${packet.characterName}")
               userCache.get(packet.sessionnum).foreach(u => {
                 usersActor ! SetCharacter(u, packet.characterName, packet.characterPortrait)
               })
@@ -80,25 +80,25 @@ class D2CSMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliveA
                 case Some(character) =>
                   if (!character.equals(packet.characterName)) {
                     val message = s"**${userCache.getOrElse(packet.sessionnum, "UNKNOWN")}** logged onto **${packet.characterName}**."
-                    HttpUtils.postMessage("http://127.0.0.1:8889/d2_activity", message)
+                    //HttpUtils.postMessage("http://127.0.0.1:8889/d2_activity", message)
                     D2CSMessageHandler.characterCache += packet.sessionnum -> packet.characterName
                   }
                 case None =>
                   val message = s"**${userCache.getOrElse(packet.sessionnum, "UNKNOWN")}** logged onto **${packet.characterName}**."
-                  HttpUtils.postMessage("http://127.0.0.1:8889/d2_activity", message)
+                  //HttpUtils.postMessage("http://127.0.0.1:8889/d2_activity", message)
                   D2CSMessageHandler.characterCache += packet.sessionnum -> packet.characterName
               }
               send(D2CSCharLoginRequest(seqno, D2CSAuthReply.RESULT_SUCCESS))
-              log.info(">> Sent D2CS_CHARLOGINREQ")
+              log.info(s">> Sent D2CS_CHARLOGINREQ(Sequence #: ${seqno}, Result: ${D2CSAuthReply.RESULT_SUCCESS})")
           }
         case Packets.D2CS_GAMEINFOREQ =>
-          log.info("[D2CSMessageHandler] D2CS_GAMEINFOREQ")
+          //log.info("[D2CSMessageHandler] D2CS_GAMEINFOREQ")
           data match {
             case D2CSGameInfoRequest(packet) =>
-              log.info(">> Received D2CS_GAMEINFOREPLY")
+              log.info(s">> Received D2CS_GAMEINFOREPLY Sequence # ${seqno} for ${packet.gameName}")
               gameCache.get(packet.gameName).foreach(a => {
                 a ! D2CSGameResponse(true)
-                log.info(">> Sent D2CSGameResponse")
+                log.info(s">> Sent D2CSGameResponse(Result: ${true})")
               })
             case a =>
               log.info(">> Unhandled {}", a.toString())
