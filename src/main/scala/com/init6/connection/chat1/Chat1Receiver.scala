@@ -133,10 +133,10 @@ class Chat1Handler(connectionInfo: ConnectionInfo) extends Init6KeepAliveActor w
       loggedInUser.userCredentials.packetsToProcess += data
       stay()
     case Event(WrittenOut, loggedInUser: LoggedInUser) =>
-      sendPing(loggedInUser.actor)
+      /*sendPing(loggedInUser.actor)
       keepAlive(loggedInUser.actor, () => {
         sendPing(loggedInUser.actor)
-      })
+      })*/
       loggedInUser.actor ! JoinChannelFromConnection(loggedInUser.userCredentials.home, forceJoin = true)
       loggedInUser.userCredentials.packetsToProcess.foreach(loggedInUser.actor ! Received(_))
       goto(LoggedInChat1State) using loggedInUser
