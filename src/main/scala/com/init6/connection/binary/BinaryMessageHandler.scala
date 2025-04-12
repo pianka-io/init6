@@ -223,7 +223,7 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
           send(SidStartVersioning())
           goto(ExpectingSidStartVersioning)
         case SID_CLIENTID2 =>
-          send(SidLogonChallengeEx(serverToken))
+          send(SidLogonChallengeEx(serverToken, connectionInfo.place))
           sendPing()
           send(SidStartVersioning())
           goto(ExpectingSidStartVersioning)
