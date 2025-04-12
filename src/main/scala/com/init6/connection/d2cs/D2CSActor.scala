@@ -90,14 +90,14 @@ class D2CSActor extends Init6Actor with Init6LoggingActor {
             val existingKey = info.userCache.collectFirst {
               case (key, value) if value.toLowerCase == accountName.toLowerCase => key
             }
-            log.info(s"D2CS AccountLoginRequest: Account Name found! Session number: $existingKey.")
+            log.debug(s"D2CS AccountLoginRequest: Account Name found! Session number: $existingKey.")
             existingKey.foreach(info.userCache -= _)
           } else if (info.userCache.contains(sessionNum)) {
             log.error(s"Session Number: $sessionNum already in D2CS User Cache for ${info.realmName}.")
             info.userCache.remove(sessionNum)
           }
           info.userCache += sessionNum -> accountName
-          log.info(s"D2CS AccountLoginRequest: Account Name added! $accountName.")
+          log.debug(s"D2CS AccountLoginRequest: Account Name added! $accountName.")
           sender() ! ReturnAccountLoginRequest(seqNum, accountName, D2CSAccountLoginRequest.RESULT_SUCCESS)
         case None =>
           sender() ! ReturnAccountLoginRequest(seqNum, accountName, D2CSAccountLoginRequest.RESULT_FAILURE)
@@ -114,18 +114,18 @@ class D2CSActor extends Init6Actor with Init6LoggingActor {
           Also, if you don't join a game then the client re-logs. The server doesn't know that and if we're tracking unique character logins that creates problems.
            */
           val charsUsername = info.userCache.getOrElse(sessionNum, "Unknown")
-          log.info(s"D2CS CharLoginRequest: Found username: $charsUsername for character $characterName.")
+          log.debug(s"D2CS CharLoginRequest: Found username: $charsUsername for character $characterName.")
 
           // Proceed with login without checking or updating characterCache
           sender() ! ReturnCharLoginRequest(seqNum, sessionNum, charsUsername, characterName, D2CSCharLoginRequest.RESULT_SUCCESS)
 
         case None =>
-          log.info(s"D2CS CharLoginRequest: Realm not found! Character login for $characterName failed!")
+          log.debug(s"D2CS CharLoginRequest: Realm not found! Character login for $characterName failed!")
           sender() ! ReturnCharLoginRequest(seqNum, sessionNum, "Unknown", characterName, D2CSCharLoginRequest.RESULT_FAILURE)
       }
 
     case ReceivedGameRequest(binaryHandler, accountName, realmName, gameName) =>
-      log.info(s"D2CS ReceivedGameRequest: $accountName on $realmName trying to create game: $gameName")
+      log.debug(s"D2CS ReceivedGameRequest: $accountName on $realmName trying to create game: $gameName")
 
       val matchingRealm = realmConnections.values.find { info =>
         info.realmName.toLowerCase == realmName.toLowerCase
@@ -165,7 +165,7 @@ class D2CSActor extends Init6Actor with Init6LoggingActor {
   }
 
   override def preStart(): Unit = {
-    log.info(s"D2CSActor started: ${self}")
+    log.debug(s"D2CSActor started: ${self}")
   }
 
   override def postStop(): Unit = {
