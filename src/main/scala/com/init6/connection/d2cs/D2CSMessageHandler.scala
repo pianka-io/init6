@@ -82,7 +82,7 @@ class D2CSMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliveA
         case Packets.D2CS_ACCOUNTLOGINREQ =>
           data match {
             case D2CSAccountLoginRequest(packet) =>
-              log.debug(s"[${hostString}] >> Received D2CS_ACCOUNTLOGINREQ Sequence # ${seqno} for ${packet.sessionnum} and ${packet.accountName}")
+              log.debug(s"[${hostString}] >> Received D2CS_ACCOUNTLOGINREQ Sequence # ${seqno} for Session #: ${packet.sessionnum} Session Key: ${packet.sessionkey} and ${packet.accountName}")
               d2csActor ! AccountLoginRequest(connectionInfo, seqno, packet.sessionnum, packet.accountName)
           }
         case Packets.D2CS_CHARLOGINREQ =>

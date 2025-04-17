@@ -90,9 +90,12 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
           case SidLogonRealmEx(packet) =>
             realmName = packet.realmName //Set realm to what the client selected
             usersActor ! SetRealm(username, realmName)
-            daoActor ! RealmCreateCookie(userId)
-            log.debug(s">> Received SID_LOGONREALMEX for ${packet.realmName}")
-            return goto(ExpectingRealmCreateCookieFromDAO)
+            //daoActor ! RealmCreateCookie(userId)
+            log.debug(s">> Received SID_LOGONREALMEX for Client Token: ${packet.clientToken} and Realm: ${packet.realmName}")
+            //return goto(ExpectingRealmCreateCookieFromDAO)
+            log.debug(s">> Sent SID_LOGONREALMEX($clientToken, $username)")
+            send(SidLogonRealmEx(clientToken, connectionInfo.place, realmName, username))
+            goto(ExpectingSidEnterChat)
         }
       case SID_STARTADVEX3 =>
         binaryPacket.packet match {
@@ -190,7 +193,7 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
       //Use config information for now!
       //d2csActor ! GetRealmLoginInfo(connectionInfo, cookie, realmName, oldUsername)
       log.debug(s">> Sent SID_LOGONREALMEX($cookie, $username)")
-      send(SidLogonRealmEx(cookie, realmName, oldUsername))
+      //send(SidLogonRealmEx(cookie, realmName, oldUsername))
       goto(ExpectingSidEnterChat)
   }
 
