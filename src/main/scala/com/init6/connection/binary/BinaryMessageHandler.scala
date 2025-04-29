@@ -173,7 +173,7 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
           case SidEnterChat(packet) =>
             send(SidEnterChat(username, oldUsername, productId))
             send(BinaryChatEncoder(UserInfoArray(Config().motd)).get)
-            //keepAlive(actor, () => sendPing())
+            keepAlive(actor, () => sendPing())
             goto(LoggedIn)
         }
 //      case SID_LEAVECHAT =>
@@ -538,7 +538,7 @@ class BinaryMessageHandler(connectionInfo: ConnectionInfo) extends Init6KeepAliv
             case SidEnterChat(packet) =>
               send(SidEnterChat(username, oldUsername, productId))
               send(BinaryChatEncoder(UserInfoArray(Config().motd)).get)
-              //keepAlive(actor, () => sendPing())
+              keepAlive(actor, () => sendPing())
               goto(LoggedIn)
           }
         case _ => handleRest(BinaryPacket(packetId, data))
